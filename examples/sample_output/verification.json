@@ -1,0 +1,65 @@
+{
+  "passed": true,
+  "checks": {
+    "V1": {
+      "name": "Trace reproducibility",
+      "passed": true,
+      "evidence": "hash=c709d3fd932790aa\u2026"
+    },
+    "V2": {
+      "name": "Cross-treatment trace equality",
+      "passed": true,
+      "evidence": "shared_trace_hash=b6197ae8a0a463e8\u2026"
+    },
+    "V3": {
+      "name": "Static Atomic FIFO earliest eligible",
+      "passed": true,
+      "evidence": "tx3_start=0.100, tx2_start=0.500"
+    },
+    "V4": {
+      "name": "Diagnostic FIFO raw queue order",
+      "passed": true,
+      "evidence": "tx2_start=0.100"
+    },
+    "V5": {
+      "name": "Matched-atomic lock exclusion",
+      "passed": true,
+      "evidence": "tx1_complete=0.500, tx2_start=0.500"
+    },
+    "V6": {
+      "name": "All-or-nothing lock release",
+      "passed": true,
+      "evidence": "remaining_locked_shards=0"
+    },
+    "V7": {
+      "name": "Multi-worker dispatch",
+      "passed": true,
+      "evidence": "tx1_start=0.000, tx3_start=0.100"
+    },
+    "V8": {
+      "name": "CAPC score hand-check",
+      "passed": true,
+      "evidence": "computed=0.853500000000, expected=0.853500000000"
+    },
+    "V9": {
+      "name": "Aging monotonicity",
+      "passed": true,
+      "evidence": "ages=[0.0, 0.25, 0.5, 1.0]"
+    },
+    "V10": {
+      "name": "Transaction accounting",
+      "passed": true,
+      "evidence": "rows=3, unique_ids=3"
+    },
+    "V11": {
+      "name": "Low-load sanity",
+      "passed": true,
+      "evidence": "max_wait=0.000000s"
+    },
+    "V12": {
+      "name": "Overload stress queue growth",
+      "passed": true,
+      "evidence": "max_queue_length=36"
+    }
+  }
+}

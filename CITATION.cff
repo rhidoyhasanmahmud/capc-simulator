@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this research software, cite the associated MSc thesis and this repository revision."
+title: "CAPC Simulator: Contention-Aware Priority Coordination for Atomic Cross-Shard IoT Workloads"
+type: software
+authors:
+  - family-names: "Rhidoy"
+    given-names: "Hasan Mahmud"
+version: 0.2.0
+date-released: 2026-10-05

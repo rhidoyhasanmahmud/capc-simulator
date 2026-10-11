@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-31%20passed-brightgreen)
 ![Verification](https://img.shields.io/badge/Chapter%205%20verification-V1--V12%20PASS-brightgreen)
-![Status](https://img.shields.io/badge/status-implementation%20verified-orange)
+![Status](https://img.shields.io/badge/status-replication%20frozen-blue)
 ![Purpose](https://img.shields.io/badge/purpose-MSc%20research-6f42c1)
 
 **Executable research artefact for an MSc thesis on blockchain scalability for time-sensitive IoT applications.**
@@ -36,7 +36,7 @@ The simulator provides:
 - run-level provenance for reproducible thesis experiments.
 
 > [!IMPORTANT]
-> This repository currently represents an **implementation, verification, and experiment-readiness artefact**. The primary CAPC parameter set has been frozen after scheduler-neutral Static Atomic FIFO calibration. Verification and neutral-pilot outputs are **not CAPC comparative performance findings**.
+> This repository currently represents an **implementation, verification, calibration, and experiment-readiness artefact**. The primary CAPC parameter set and final replication count have been frozen before labelled CAPC comparative inference. The final replication count is **N = 60** with consecutive seeds **1-60**. Verification, neutral-pilot, runtime-readiness, calibration, and baseline-precision outputs are **not CAPC comparative performance findings**. The main 5,400-run comparative matrix has not yet been executed.
 
 ---
 
@@ -142,10 +142,13 @@ capc-simulator/
 │   ├── COMPONENTS.md
 │   ├── DEVELOPMENT_VERIFICATION.md
 │   ├── END_TO_END_WORKFLOW.md
+│   ├── EXPERIMENT_EVIDENCE_LOG.md
 │   ├── EXPERIMENT_PROTOCOL.md
 │   ├── GITHUB_SETUP.md
 │   ├── OUTPUT_SCHEMA.md
 │   ├── PARAMETER_FREEZE.md
+│   ├── REPLICATION_FREEZE.md
+│   ├── REPLICATION_PRECISION_LOG.md
 │   ├── RESEARCH_INTEGRITY.md
 │   ├── THESIS_TRACEABILITY.md
 │   └── VERIFICATION.md
@@ -329,7 +332,36 @@ It additionally writes:
 - `pilot_regime_summary.csv`;
 - `pilot_acceptance.json`.
 
-The completed thesis neutral pilot used Static Atomic FIFO only across 90 runs (5 seeds × 18 shard/ratio/worker conditions). It produced 16 LOW, 54 TRANSITIONAL, and 20 HIGH classifications, so the predeclared contention-regime coverage criterion passed. These outputs were used only for scheduler-neutral readiness and normalization calibration; they are not CAPC performance findings.
+The completed thesis neutral pilot used Static Atomic FIFO only across 90 runs (5 seeds × 18 shard/ratio/worker conditions). It produced 16 LOW, 54 TRANSITIONAL, and 20 HIGH classifications, so the contention-regime coverage criterion passed. These outputs were used only for scheduler-neutral readiness and normalization calibration; they are not CAPC performance findings.
+
+---
+
+## Replication precision freeze
+
+Replication selection used **Static Atomic FIFO only** and was completed before any labelled CAPC comparative-performance result was inspected.
+
+The candidate sequence was `{30, 40, 50, 60}`. For each candidate `N`, the 95% CI half-width for baseline mean log-p99 was calculated separately for each of the 18 shard/ratio/worker conditions. A candidate was accepted only if all 18 conditions met the `<= 0.05` target.
+
+| Candidate N | Conditions passing | Worst half-width | Decision |
+|---:|---:|---:|---|
+| 30 | 16/18 | 0.070277 | Extend |
+| 40 | 16/18 | 0.060462 | Extend |
+| 50 | 16/18 | 0.056660 | Extend |
+| 60 | 16/18 | 0.051552 | Freeze at maximum candidate |
+
+Final decision:
+
+```text
+N = 60
+Frozen seeds = 1..60
+Decision = FREEZE_N_60_WITH_PRECISION_LIMITATION
+```
+
+At `N=60`, the two residual cases above the 0.05 target are the `4`-shard, `0.50` cross-shard-ratio conditions with `2` and `4` workers; both have half-width `0.0515515907`. Because `N=60` is the maximum predeclared candidate, no additional seeds are added. The residual baseline-precision limitation will be reported transparently in the thesis.
+
+The final precision exercise represents **1,080 Static Atomic FIFO runs**, all on frozen execution revision `282ee70e735294bde8500de15a8c376d0cfdd94c`, with 18 expected condition-specific effective configuration hashes and consecutive seeds `1-60`.
+
+See [`docs/REPLICATION_PRECISION_LOG.md`](docs/REPLICATION_PRECISION_LOG.md) and [`docs/REPLICATION_FREEZE.md`](docs/REPLICATION_FREEZE.md).
 
 ---
 
@@ -370,15 +402,15 @@ This deterministic table does **not** declare overall CAPC success; the final de
 | Cross-shard ratio | `0.10`, `0.30`, `0.50` |
 | Coordination workers | `2`, `4` |
 | Scheduler treatments | `5` |
-| Seeds | frozen `1..N` |
+| Seeds | frozen `1..60` |
 
-The main matrix is therefore:
+The frozen main matrix is therefore:
 
 ```text
-3 × 3 × 2 × 5 × N = 90N runs
+3 × 3 × 2 × 5 × 60 = 5,400 runs
 ```
 
-The final replication count is selected from the predeclared candidate set `{30, 40, 50, 60}` using Static Atomic FIFO baseline log-p99 precision and frozen before labelled comparative inference.
+The final replication count was selected from the predeclared candidate set `{30, 40, 50, 60}` using Static Atomic FIFO baseline log-p99 precision and frozen before labelled comparative inference. The main 5,400-run comparative matrix has not yet been executed.
 
 ---
 
@@ -435,7 +467,8 @@ The repository enforces or records:
 - source revision when available;
 - raw data before aggregation;
 - failed-run logging without silent replacement seeds;
-- fixed CAPC parameters during final comparative runs.
+- fixed CAPC parameters during final comparative runs;
+- frozen consecutive main-experiment seeds `1-60`.
 
 ---
 
@@ -457,9 +490,12 @@ These are research-boundary exclusions rather than missing software features.
 | [`DEVELOPMENT_VERIFICATION.md`](docs/DEVELOPMENT_VERIFICATION.md) | Development verification evidence |
 | [`END_TO_END_WORKFLOW.md`](docs/END_TO_END_WORKFLOW.md) | Verification → pilot → matrix → analysis workflow |
 | [`EXPERIMENT_PROTOCOL.md`](docs/EXPERIMENT_PROTOCOL.md) | Experimental protocol summary |
+| [`EXPERIMENT_EVIDENCE_LOG.md`](docs/EXPERIMENT_EVIDENCE_LOG.md) | Durable thesis evidence ledger |
 | [`OUTPUT_SCHEMA.md`](docs/OUTPUT_SCHEMA.md) | Raw outputs and provenance schema |
 | [`RESEARCH_INTEGRITY.md`](docs/RESEARCH_INTEGRITY.md) | Guardrails against post-hoc tuning and unsupported claims |
 | [`PARAMETER_FREEZE.md`](docs/PARAMETER_FREEZE.md) | Neutral calibration evidence and frozen primary CAPC configuration |
+| [`REPLICATION_PRECISION_LOG.md`](docs/REPLICATION_PRECISION_LOG.md) | Baseline replication-precision candidate history |
+| [`REPLICATION_FREEZE.md`](docs/REPLICATION_FREEZE.md) | Final N=60 and seed-list freeze evidence |
 | [`GITHUB_SETUP.md`](docs/GITHUB_SETUP.md) | Repository publication/setup guidance |
 
 ---
@@ -480,11 +516,13 @@ These are research-boundary exclusions rather than missing software features.
 | Primary-run runtime optimization | ✅ Validated with equivalent summary outputs |
 | Final CAPC parameter freeze | ✅ Frozen and verified |
 | Neutral thesis pilot | ✅ 90 Static Atomic FIFO runs; regime coverage PASS |
-| Final replication count `N` | ⏳ Pending baseline precision check |
-| Main `90N` research matrix | ⏳ Not executed |
+| Baseline precision exercise | ✅ 1,080 Static Atomic FIFO runs; provenance PASS |
+| Final replication count `N` | ✅ Frozen at `60`; seeds `1-60` |
+| Residual precision limitation | ⚠️ 2/18 conditions at half-width `0.051552` |
+| Main comparative research matrix | ⏳ 5,400 runs not executed |
 | CAPC performance conclusions | ⏳ Not established |
 
-**Implementation evidence precedes performance evidence.**
+**Implementation and experiment-readiness evidence precede performance evidence.**
 
 ---
 

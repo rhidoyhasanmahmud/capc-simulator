@@ -36,7 +36,7 @@ The simulator provides:
 - run-level provenance for reproducible thesis experiments.
 
 > [!IMPORTANT]
-> This repository currently represents an **implementation and verification artefact**. The development configuration is runnable, but the final CAPC numerical parameters are intentionally not presented as thesis-frozen values. Verification outputs are software evidence, **not CAPC performance findings**.
+> This repository currently represents an **implementation, verification, and experiment-readiness artefact**. The primary CAPC parameter set has been frozen after scheduler-neutral Static Atomic FIFO calibration. Verification and neutral-pilot outputs are **not CAPC comparative performance findings**.
 
 ---
 
@@ -136,6 +136,7 @@ capc-simulator/
 ├── .github/workflows/tests.yml
 ├── configs/
 │   ├── dev.yaml
+│   ├── primary.yaml
 │   └── primary_template.yaml
 ├── docs/
 │   ├── COMPONENTS.md
@@ -144,6 +145,7 @@ capc-simulator/
 │   ├── EXPERIMENT_PROTOCOL.md
 │   ├── GITHUB_SETUP.md
 │   ├── OUTPUT_SCHEMA.md
+│   ├── PARAMETER_FREEZE.md
 │   ├── RESEARCH_INTEGRITY.md
 │   ├── THESIS_TRACEABILITY.md
 │   └── VERIFICATION.md
@@ -327,7 +329,7 @@ It additionally writes:
 - `pilot_regime_summary.csv`;
 - `pilot_acceptance.json`.
 
-These summarize scheduler-neutral raw utilization, observed lock blocking, queueing, and LOW/TRANSITIONAL/HIGH contention-regime coverage. Development pilot outputs must not be interpreted as thesis performance findings.
+The completed thesis neutral pilot used Static Atomic FIFO only across 90 runs (5 seeds × 18 shard/ratio/worker conditions). It produced 16 LOW, 54 TRANSITIONAL, and 20 HIGH classifications, so the predeclared contention-regime coverage criterion passed. These outputs were used only for scheduler-neutral readiness and normalization calibration; they are not CAPC performance findings.
 
 ---
 
@@ -376,7 +378,7 @@ The main matrix is therefore:
 3 × 3 × 2 × 5 × N = 90N runs
 ```
 
-The final replication count is selected from the predeclared candidate set after the neutral Static Atomic FIFO pilot and frozen before labelled comparative inference.
+The final replication count is selected from the predeclared candidate set `{30, 40, 50, 60}` using Static Atomic FIFO baseline log-p99 precision and frozen before labelled comparative inference.
 
 ---
 
@@ -386,11 +388,21 @@ The final replication count is selected from the predeclared candidate set after
 
 For software development, debugging, smoke runs, and verification only. Its CAPC values are **not automatically the thesis parameter set**.
 
+### `configs/primary.yaml`
+
+Contains the frozen primary experiment configuration. The CAPC parameters were frozen after scheduler-neutral Static Atomic FIFO calibration and before labelled CAPC comparative experimentation.
+
+Current primary configuration SHA-256:
+
+`be25b6dc8c89c3a49b891ea4c69e1c1dfe38b6e117d577bd8026c2d0094ba875`
+
+See [`docs/PARAMETER_FREEZE.md`](docs/PARAMETER_FREEZE.md) for the calibration evidence, freeze rationale, and research-integrity boundary.
+
 ### `configs/primary_template.yaml`
 
-Contains the methodology-level experiment structure while leaving the still-unfrozen CAPC numerical values as `null`. Primary/research mode is designed to fail fast until those values are academically justified, documented, and frozen.
+Contains the methodology-level experiment structure with CAPC numerical values intentionally left as `null`. It remains a template rather than the executable frozen primary parameter set.
 
-This prevents development placeholders from silently becoming final thesis settings.
+This separation prevents development placeholders from silently becoming final thesis settings.
 
 ---
 
@@ -447,6 +459,7 @@ These are research-boundary exclusions rather than missing software features.
 | [`EXPERIMENT_PROTOCOL.md`](docs/EXPERIMENT_PROTOCOL.md) | Experimental protocol summary |
 | [`OUTPUT_SCHEMA.md`](docs/OUTPUT_SCHEMA.md) | Raw outputs and provenance schema |
 | [`RESEARCH_INTEGRITY.md`](docs/RESEARCH_INTEGRITY.md) | Guardrails against post-hoc tuning and unsupported claims |
+| [`PARAMETER_FREEZE.md`](docs/PARAMETER_FREEZE.md) | Neutral calibration evidence and frozen primary CAPC configuration |
 | [`GITHUB_SETUP.md`](docs/GITHUB_SETUP.md) | Repository publication/setup guidance |
 
 ---
@@ -465,9 +478,9 @@ These are research-boundary exclusions rather than missing software features.
 | Automated tests | ✅ 31 passed in development verification |
 | Chapter 5 V1-V12 checks | ✅ PASS |
 | Primary-run runtime optimization | ✅ Validated with equivalent summary outputs |
-| Final CAPC parameter freeze | ⏳ Research decision pending |
-| Neutral thesis pilot | ⏳ Not yet final evidence |
-| Final replication count `N` | ⏳ Pending pilot |
+| Final CAPC parameter freeze | ✅ Frozen and verified |
+| Neutral thesis pilot | ✅ 90 Static Atomic FIFO runs; regime coverage PASS |
+| Final replication count `N` | ⏳ Pending baseline precision check |
 | Main `90N` research matrix | ⏳ Not executed |
 | CAPC performance conclusions | ⏳ Not established |
 

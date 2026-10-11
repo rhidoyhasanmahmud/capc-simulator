@@ -4,8 +4,9 @@ import argparse
 import json
 from pathlib import Path
 
+from capc_sim.analysis.preservation import analyze_matrix
 from capc_sim.config.loader import load_config
-from capc_sim.experiments.pilot import run_neutral_pilot
+from capc_sim.experiments.pilot import run_neutral_pilot, summarize_neutral_pilot
 from capc_sim.experiments.runner import run_matrix, run_single
 from capc_sim.experiments.verify import verification_passed, verification_report
 
@@ -37,6 +38,11 @@ def _parser() -> argparse.ArgumentParser:
     pilot.add_argument("--ratios", nargs="+", type=float)
     pilot.add_argument("--workers", nargs="+", type=int)
     pilot.add_argument("--output", default="results/pilot")
+
+    analyze = sub.add_parser("analyze", help="Create deterministic matrix post-processing tables")
+    analyze.add_argument("--config", required=True)
+    analyze.add_argument("--matrix-dir", required=True)
+    analyze.add_argument("--output")
 
     verify = sub.add_parser("verify", help="Run the Chapter 5 V1-V12 deterministic verification checks")
     verify.add_argument("--config", required=True)
@@ -81,7 +87,30 @@ def main(argv=None) -> int:
             cross_shard_ratios=args.ratios,
             workers=args.workers,
         )
-        print(f"Completed {len(df)} Static Atomic FIFO pilot runs. Summary: {Path(args.output) / 'matrix_summary.csv'}")
+        report, acceptance = summarize_neutral_pilot(df, config)
+        report.to_csv(Path(args.output) / "pilot_regime_summary.csv", index=False)
+        (Path(args.output) / "pilot_acceptance.json").write_text(
+            json.dumps(acceptance, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        print(
+            f"Completed {len(df)} Static Atomic FIFO pilot runs. "
+            f"Regime coverage pass={acceptance['regime_coverage_pass']}. "
+            f"Summary: {Path(args.output) / 'pilot_regime_summary.csv'}"
+        )
+        return 0
+
+    if args.command == "analyze":
+        result = analyze_matrix(
+            args.matrix_dir,
+            warmup_s=config.simulation.warmup_s,
+            duration_s=config.simulation.duration_s,
+            output_dir=args.output,
+        )
+        output = Path(args.output) if args.output else Path(args.matrix_dir) / "analysis"
+        print(
+            f"Analyzed {len(result['enriched_summary'])} runs. "
+            f"Outputs: {output}"
+        )
         return 0
 
     if args.command == "verify":

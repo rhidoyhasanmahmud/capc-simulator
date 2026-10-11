@@ -85,6 +85,8 @@ Contains:
 - Git commit if available;
 - Python version;
 - OS/platform/processor string;
+- Python executable and machine architecture;
+- best-effort total physical memory in bytes;
 - relevant package versions;
 - cutoff snapshot;
 - schema version.
@@ -98,5 +100,12 @@ The exact configuration object used by the run.
 - `pair_integrity.csv`
 - `matrix_manifest.json`
 - `failures.json`
+
+Matrix post-processing additionally creates an `analysis/` directory containing:
+
+- `starvation_by_run.csv` — condition/seed-specific paired-baseline starvation thresholds and incidences;
+- `matrix_summary_enriched.csv` — original run summaries with starvation fields attached;
+- `capc_vs_baseline_preservation.csv` — per-pair practical/preservation checks;
+- `analysis_manifest.json` — post-processing rules and thresholds.
 
 These files allow a final thesis result to be traced from a table/figure back to the exact run set and configuration.

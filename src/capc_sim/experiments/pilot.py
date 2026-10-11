@@ -76,3 +76,45 @@ def contention_regime(row: pd.Series) -> str:
     if (rho >= 0.60 or block >= 0.30) and queueing:
         return "HIGH"
     return "UNCLASSIFIED"
+
+
+def summarize_neutral_pilot(df: pd.DataFrame, config: ExperimentConfig) -> tuple[pd.DataFrame, dict]:
+    """Attach scheduler-neutral load diagnostics and assess regime coverage.
+
+    The regime label uses BURST raw utilization because the neutral-pilot acceptance
+    criteria are intended to confirm that the matrix spans low, transitional and
+    high contention when burst pressure is present. Whole-run lock blocking and
+    queueing remain observed diagnostics rather than assumed quantities.
+    """
+    report = df.copy()
+    mean_service_s = (
+        config.coordination.service_time_ms.min + config.coordination.service_time_ms.max
+    ) / 2000.0
+    report["raw_utilization_normal"] = (
+        config.workload.lambda_normal
+        * report["cross_shard_ratio"].astype(float)
+        * mean_service_s
+        / report["workers"].astype(float)
+    )
+    report["raw_utilization_burst"] = (
+        config.workload.lambda_burst
+        * report["cross_shard_ratio"].astype(float)
+        * mean_service_s
+        / report["workers"].astype(float)
+    )
+    report["raw_utilization"] = report["raw_utilization_burst"]
+    report["contention_regime"] = report.apply(contention_regime, axis=1)
+
+    observed = set(report["contention_regime"].dropna().astype(str))
+    acceptance = {
+        "has_low": "LOW" in observed,
+        "has_transitional": "TRANSITIONAL" in observed,
+        "has_high": "HIGH" in observed,
+    }
+    acceptance["regime_coverage_pass"] = all(acceptance.values())
+    acceptance["classification_utilization_basis"] = "BURST raw utilization"
+    acceptance["note"] = (
+        "Neutral-pilot regime coverage is scheduler-independent evidence only; "
+        "it does not inspect or select settings from CAPC performance."
+    )
+    return report, acceptance

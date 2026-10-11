@@ -5,9 +5,9 @@
 ### Contention-Aware Priority Coordination for Atomic Cross-Shard Blockchain Scheduling under Burst-Driven IoT Workloads
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-29%20passed-brightgreen)
+![Tests](https://img.shields.io/badge/tests-31%20passed-brightgreen)
 ![Verification](https://img.shields.io/badge/Chapter%205%20verification-V1--V12%20PASS-brightgreen)
-![Status](https://img.shields.io/badge/research%20status-implementation%20verified-orange)
+![Status](https://img.shields.io/badge/status-implementation%20verified-orange)
 ![Purpose](https://img.shields.io/badge/purpose-MSc%20research-6f42c1)
 
 **Executable research artefact for an MSc thesis on blockchain scalability for time-sensitive IoT applications.**
@@ -18,55 +18,56 @@
 
 ## Overview
 
-This repository implements **CAPC (Contention-Aware Priority Coordination)**, a scheduling-layer mechanism for atomic cross-shard transactions in a logically sharded blockchain model.
+This repository implements **CAPC (Contention-Aware Priority Coordination)**, a deterministic scheduling-layer mechanism for pending atomic cross-shard transactions in a logically sharded blockchain model.
 
-The research problem is narrow by design: when burst-driven IoT workloads create contention for a finite cross-shard coordination service, can transaction service order be made more responsive to **contention, urgency, waiting age, dependency burden, and recent shard-lock pressure** while preserving the same atomic coordination semantics as the matched baseline?
+The research question is deliberately narrow: when burst-driven IoT workloads create contention for finite cross-shard coordination capacity, can service order be made responsive to **contention, urgency, waiting age, dependency burden, and recent shard-lock pressure** without changing the atomic service semantics used by the matched baseline?
 
-The simulator provides the executable implementation boundary required by the thesis methodology:
+The simulator provides:
 
 - two-state **Markov-Modulated Poisson Process (MMPP)** workload generation;
-- logical shards and multi-shard transaction dependencies;
-- finite coordination workers;
+- logical shards and one-/two-/three-shard transaction footprints;
+- finite cross-shard coordination workers;
 - all-or-nothing shard locking for matched atomic treatments;
-- interchangeable scheduling policies behind a common interface;
-- full CAPC and two ablation variants;
-- paired workload traces across treatments;
-- transaction-level observability and run provenance;
-- verification, pilot, experiment-matrix, and analysis utilities.
+- a common scheduler interface;
+- Static Atomic FIFO, full CAPC, two CAPC ablations, and Diagnostic FIFO;
+- deterministic paired workload replay across treatments;
+- transaction-, event-, queue-, and decision-level logging;
+- neutral-pilot, verification, matrix execution, and analysis utilities;
+- run-level provenance for reproducible thesis experiments.
 
 > [!IMPORTANT]
-> The current repository snapshot is an **implementation and verification artefact**. Development parameters are included so that the software can be executed and tested, but the final CAPC numerical parameters are intentionally not treated as frozen thesis parameters. The verification outputs shown in this README are **not CAPC performance results**.
+> This repository currently represents an **implementation and verification artefact**. The development configuration is runnable, but the final CAPC numerical parameters are intentionally not presented as thesis-frozen values. Verification outputs are software evidence, **not CAPC performance findings**.
 
 ---
 
-## Research scope
+## Research boundary
 
-CAPC changes **only the service-order decision** among pending cross-shard transactions. It does not redesign consensus, shard formation, validator assignment, networking, or atomic commit semantics.
+CAPC changes **service order only**. It does not redesign consensus, shard formation, validator assignment, networking, or atomic commit semantics.
 
-For the matched atomic treatments, a transaction may start service only when:
+For the matched atomic treatments, a transaction can enter service only when:
 
 1. a coordination worker is free; and
-2. **all** of its required shards are currently unlocked.
+2. all required logical shards are simultaneously available.
 
-Waiting transactions never hold partial shard locks, and service is non-preemptive after dispatch.
+A waiting transaction never holds a partial subset of its required locks. After dispatch, coordination service is non-preemptive.
 
 ### Scheduler treatments
 
 | Treatment | Role | Selection rule |
 |---|---|---|
-| **Diagnostic FIFO** | Descriptive reference only | Oldest waiting cross-shard request; not part of the matched atomic causal comparison |
+| **Diagnostic FIFO** | Descriptive reference | Oldest waiting cross-shard request; non-atomic comparison path |
 | **Static Atomic FIFO** | Principal matched baseline | Earliest-arriving currently eligible transaction |
-| **Full CAPC** | Proposed scheduler | Maximum CAPC score among eligible transactions |
+| **Full CAPC** | Proposed scheduler | Highest CAPC score among eligible transactions |
 | **CAPC-No-Contention** | Ablation | Full CAPC with contention amplification disabled |
 | **CAPC-No-Priority** | Ablation | Full CAPC with urgency contribution disabled |
+
+Diagnostic FIFO is intentionally excluded from the primary causal matched comparison because it does not share the same atomic eligibility semantics.
 
 ---
 
 ## CAPC decision model
 
-CAPC first filters the queue using instantaneous lock eligibility. Only eligible transactions are ranked.
-
-For eligible transaction `i` at time `t`:
+CAPC first performs atomic eligibility filtering. Only currently eligible transactions are ranked.
 
 ```text
 S_i(t) = w_U U_i + w_A A_i(t)
@@ -76,21 +77,21 @@ S_i(t) = w_U U_i + w_A A_i(t)
 
 where:
 
-- `C(t)` — normalized global contention score;
-- `U_i` — urgency value (`Low=0`, `Medium=0.5`, `High=1`);
-- `A_i(t)` — bounded monotonic waiting-age score;
-- `D_i` — normalized dependency burden;
-- `H_i(t)` — recent lock pressure over the transaction's required shards.
+- `C(t)` = normalized global contention score;
+- `U_i` = urgency (`Low=0`, `Medium=0.5`, `High=1`);
+- `A_i(t)` = bounded monotonic waiting-age contribution;
+- `D_i` = normalized shard-dependency burden;
+- `H_i(t)` = recent lock-pressure over the transaction's required shards.
 
-The instantaneous active-lock conflict count `K_i(t)` is used for **eligibility** and for RQ2 logging. It is deliberately not used as an additive ranking term after eligibility filtering, because every eligible transaction necessarily has `K_i(t)=0` at that instant.
+The instantaneous active-lock conflict count `K_i(t)` is used for **eligibility** and RQ2 logging. It is not used as an additive post-filter ranking term because every eligible transaction has `K_i(t)=0` at the selection instant.
 
-Tie-breaking is deterministic:
+Deterministic tie-breaking is:
 
 ```text
 higher CAPC score
-    -> greater waiting age
-    -> earlier arrival / queue entry
-    -> lower transaction ID
+→ greater waiting age
+→ earlier arrival / queue entry
+→ lower transaction ID
 ```
 
 ---
@@ -108,8 +109,8 @@ flowchart LR
     F --> F1[Diagnostic FIFO]
     F --> F2[Static Atomic FIFO]
     F --> F3[Full CAPC]
-    F --> F4[CAPC No Contention]
-    F --> F5[CAPC No Priority]
+    F --> F4[No Contention]
+    F --> F5[No Priority]
 
     F2 --> G[Atomic Coordinator]
     F3 --> G
@@ -118,120 +119,97 @@ flowchart LR
     F1 --> H[Diagnostic Service Path]
 
     G --> I[Worker Pool + Lock Manager]
-    I --> J[Metrics + Provenance]
-    H --> J
+    H --> J[Metrics + Provenance]
+    I --> J
     J --> K[CSV / JSON / YAML Outputs]
     K --> L[Offline Analysis]
 ```
 
-The implementation deliberately separates **workload**, **model**, **scheduler**, **coordination**, **measurement**, and **analysis** layers. This prevents a scheduler implementation from silently changing the workload or service semantics.
+The workload, model, scheduler, coordination, metrics, experiment, and analysis layers are separated so that changing the scheduler cannot silently change the exogenous workload or service model.
 
 ---
 
 ## Repository structure
 
 ```text
-capc-sim/
-├── .github/
-│   └── workflows/
-│       └── tests.yml
+capc-simulator/
+├── .github/workflows/tests.yml
 ├── configs/
 │   ├── dev.yaml
 │   └── primary_template.yaml
 ├── docs/
 │   ├── COMPONENTS.md
 │   ├── DEVELOPMENT_VERIFICATION.md
+│   ├── END_TO_END_WORKFLOW.md
 │   ├── EXPERIMENT_PROTOCOL.md
 │   ├── GITHUB_SETUP.md
 │   ├── OUTPUT_SCHEMA.md
 │   ├── RESEARCH_INTEGRITY.md
 │   ├── THESIS_TRACEABILITY.md
 │   └── VERIFICATION.md
-├── examples/
-│   └── sample_output/
+├── examples/sample_output/
 ├── scripts/
-├── src/
-│   └── capc_sim/
-│       ├── analysis/
-│       ├── config/
-│       ├── coordinator/
-│       ├── experiments/
-│       ├── metrics/
-│       ├── model/
-│       ├── scheduler/
-│       ├── simulation/
-│       └── workload/
+├── src/capc_sim/
+│   ├── analysis/
+│   ├── config/
+│   ├── coordinator/
+│   ├── experiments/
+│   ├── metrics/
+│   ├── model/
+│   ├── scheduler/
+│   ├── simulation/
+│   └── workload/
 ├── tests/
 │   ├── integration/
 │   ├── regression/
 │   └── unit/
-├── .gitignore
 ├── CITATION.cff
 ├── LICENSE-NOTICE.md
-├── MANIFEST.sha256
 ├── pyproject.toml
 ├── requirements.txt
 └── README.md
 ```
 
-A file-by-file explanation of the implementation is available in **[`docs/COMPONENTS.md`](docs/COMPONENTS.md)**.
+See [`docs/COMPONENTS.md`](docs/COMPONENTS.md) for component-by-component responsibilities and research traceability.
 
 ---
 
-## Quick start
-
-### 1. Clone and enter the repository
+## Installation
 
 ```bash
-git clone <your-github-repository-url>
-cd capc-sim
-```
+git clone https://github.com/rhidoyhasanmahmud/capc-simulator.git
+cd capc-simulator
 
-### 2. Create a virtual environment
-
-```bash
 python -m venv .venv
-```
+source .venv/bin/activate        # macOS / Linux
+# .venv\Scripts\Activate.ps1    # Windows PowerShell
 
-Activate it:
-
-```bash
-# macOS / Linux
-source .venv/bin/activate
-
-# Windows PowerShell
-.venv\Scripts\Activate.ps1
-```
-
-### 3. Install the project
-
-```bash
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
 ```
 
 Python **3.11+** is required.
 
-### 4. Run the automated test suite
+---
+
+## Automated tests
 
 ```bash
 pytest
 ```
 
-Verified output for this packaged source snapshot:
+Development verification snapshot:
 
 ```text
-.............................                                            [100%]
-29 passed
+...............................                                          [100%]
+31 passed
 ```
+
+The test suite covers configuration gating, deterministic workload generation, queue/lock semantics, scheduler behaviour, CAPC scoring, aging, paired trace equality, event flow, accounting, state-series calculations, paired starvation analysis, and preservation checks.
 
 ---
 
-## Chapter 5 implementation verification
-
-The repository includes deterministic checks corresponding to the thesis implementation-verification matrix.
-
-Run:
+## Chapter 5 verification
 
 ```bash
 capc-sim verify \
@@ -239,33 +217,30 @@ capc-sim verify \
   --json-output results/verification.json
 ```
 
-Verified output from this source snapshot:
+The implementation verification matrix covers:
 
 ```text
-PASS V1   Trace reproducibility
-PASS V2   Cross-treatment trace equality
-PASS V3   Static Atomic FIFO earliest eligible
-PASS V4   Diagnostic FIFO raw queue order
-PASS V5   Matched-atomic lock exclusion
-PASS V6   All-or-nothing lock release
-PASS V7   Multi-worker dispatch
-PASS V8   CAPC score hand-check
-PASS V9   Aging monotonicity
-PASS V10  Transaction accounting
-PASS V11  Low-load sanity
-PASS V12  Overload stress queue growth
-
-Overall: PASS
+V1   Trace reproducibility
+V2   Cross-treatment trace equality
+V3   Static Atomic FIFO ordering
+V4   Diagnostic FIFO ordering
+V5   Matched-atomic lock exclusion
+V6   All-or-nothing lock release
+V7   Multi-worker dispatch
+V8   CAPC score hand-check
+V9   Aging monotonicity
+V10  Transaction accounting
+V11  Low-load sanity
+V12  Overload stress queue growth
 ```
 
-Machine-readable example: [`examples/sample_output/verification.json`](examples/sample_output/verification.json).
+Current development verification: **V1-V12 PASS**.
 
-> [!NOTE]
-> A verification PASS means that the software behaves consistently with the declared simulation model and invariants. It does **not** demonstrate that CAPC outperforms Static Atomic FIFO.
+> A verification PASS demonstrates consistency with the declared simulator design. It does not demonstrate that CAPC outperforms the baseline.
 
 ---
 
-## Run a development simulation
+## Run one development simulation
 
 ```bash
 capc-sim run \
@@ -275,27 +250,26 @@ capc-sim run \
   --output results/dev
 ```
 
-A run creates a directory similar to:
+Each run preserves raw and derived evidence such as:
 
 ```text
-results/dev/sh4_x30_w2_capc_seed001/
-├── decisions.csv
-├── dispatch_snapshots.csv
-├── effective_config.yaml
-├── metadata.json
-├── queue_recovery.json
-├── state_events.csv
-├── summary.json
-├── trace.csv
-├── transactions.csv
-└── workload_states.csv
+trace.csv
+workload_states.csv
+transactions.csv
+decisions.csv
+dispatch_snapshots.csv
+state_events.csv
+summary.json
+queue_recovery.json
+metadata.json
+effective_config.yaml
 ```
 
-These files preserve the raw evidence needed to reconstruct run-level latency, queue, throughput, fairness, starvation, stability, and RQ2 predictor analyses.
+`metadata.json` records configuration and trace hashes, Git revision when available, Python/runtime details, platform and machine information, processor, best-effort physical memory, package versions, and cutoff state.
 
 ---
 
-## Run a paired five-treatment smoke matrix
+## Run a paired matrix
 
 ```bash
 capc-sim matrix \
@@ -307,28 +281,13 @@ capc-sim matrix \
   --output results/dev_matrix
 ```
 
-Verified console output:
-
-```text
-Completed 5 runs. Summary: results/dev_matrix/matrix_summary.csv
-```
-
-The matrix writes `pair_integrity.csv`. A valid paired run must show the same exogenous trace hash across all scheduler treatments.
-
-Verified paired-trace integrity example:
-
-```text
-shard_count,cross_shard_ratio,workers,seed,paired_trace_equal
-4,0.3,2,1,True
-```
-
-This check is important because scheduler-specific random-number consumption must never alter arrivals, priorities, required shards, or service requirements.
+The matrix runner generates one exogenous trace for each condition/seed and replays it across the selected treatments. `pair_integrity.csv` records whether paired scheduler runs use the same trace hash.
 
 ---
 
 ## Neutral pilot
 
-The neutral pilot runs **Static Atomic FIFO only**. This keeps readiness and replication decisions independent of labelled CAPC performance.
+The neutral pilot runs **Static Atomic FIFO only**, avoiding labelled CAPC performance when checking experimental readiness.
 
 ```bash
 capc-sim pilot \
@@ -340,13 +299,45 @@ capc-sim pilot \
   --output results/pilot
 ```
 
-For the final thesis experiment, the pilot must use the approved configuration and the predeclared replication rule rather than the development settings.
+It additionally writes:
+
+- `pilot_regime_summary.csv`;
+- `pilot_acceptance.json`.
+
+These summarize scheduler-neutral raw utilization, observed lock blocking, queueing, and LOW/TRANSITIONAL/HIGH contention-regime coverage. Development pilot outputs must not be interpreted as thesis performance findings.
+
+---
+
+## Deterministic matrix post-processing
+
+After a paired matrix completes:
+
+```bash
+capc-sim analyze \
+  --config configs/dev.yaml \
+  --matrix-dir results/dev_matrix
+```
+
+The analysis stage writes:
+
+- `analysis/starvation_by_run.csv`;
+- `analysis/matrix_summary_enriched.csv`;
+- `analysis/capc_vs_baseline_preservation.csv`;
+- `analysis/analysis_manifest.json`.
+
+The starvation threshold is derived separately for each condition/seed from the matched Static Atomic FIFO waiting distribution:
+
+```text
+max(0.50 s, 5 × paired-baseline median waiting time)
+```
+
+The same threshold is then applied to paired treatments. The preservation table evaluates the predeclared practical limits for p99 reduction, throughput, Jain's completion-ratio index, starvation incidence, low-priority p95 waiting time, and queue stability.
+
+This deterministic table does **not** declare overall CAPC success; the final decision also requires the predeclared paired uncertainty analysis across seeds.
 
 ---
 
 ## Primary thesis experiment design
-
-The main design uses:
 
 | Factor | Levels |
 |---|---|
@@ -354,102 +345,70 @@ The main design uses:
 | Cross-shard ratio | `0.10`, `0.30`, `0.50` |
 | Coordination workers | `2`, `4` |
 | Scheduler treatments | `5` |
-| Seeds | frozen list `1..N` |
+| Seeds | frozen `1..N` |
 
-Therefore:
+The main matrix is therefore:
 
 ```text
-3 x 3 x 2 x 5 x N = 90N runs
+3 × 3 × 2 × 5 × N = 90N runs
 ```
 
-The primary configuration template is [`configs/primary_template.yaml`](configs/primary_template.yaml).
-
-The CAPC-specific numerical values remain `null` until they are academically justified and frozen. The software is designed to reject a primary-mode run with missing frozen values rather than silently substituting development parameters.
+The final replication count is selected from the predeclared candidate set after the neutral Static Atomic FIFO pilot and frozen before labelled comparative inference.
 
 ---
 
-## Development configuration vs. final research configuration
+## Configuration integrity
 
 ### `configs/dev.yaml`
 
-Used for:
-
-- software development;
-- debugging;
-- automated tests;
-- smoke runs;
-- implementation verification.
-
-Its CAPC values are **not thesis findings and not automatically the final research parameter set**.
+For software development, debugging, smoke runs, and verification only. Its CAPC values are **not automatically the thesis parameter set**.
 
 ### `configs/primary_template.yaml`
 
-Contains the fixed methodology-level values, including the 1,800 s arrival horizon, 180 s warm-up, MMPP workload parameters, shard factors, dependency mix, priority mix, worker levels, and service-time abstraction.
+Contains the methodology-level experiment structure while leaving the still-unfrozen CAPC numerical values as `null`. Primary/research mode is designed to fail fast until those values are academically justified, documented, and frozen.
 
-Before main comparative experimentation, the following CAPC values must be frozen and recorded in a versioned final configuration:
-
-- arrival-rate observation window;
-- recent lock-pressure observation window;
-- arrival and queue normalization references;
-- contention-component weights;
-- aging horizon;
-- transaction-ranking weights;
-- contention amplification coefficient `gamma`;
-- optional LOW/MEDIUM/HIGH interpretation thresholds.
+This prevents development placeholders from silently becoming final thesis settings.
 
 ---
 
-## Output artefacts
+## Statistical-analysis support
 
-| Output file | Purpose |
-|---|---|
-| `trace.csv` | Scheduler-independent exogenous transaction trace |
-| `workload_states.csv` | MMPP NORMAL/BURST state intervals |
-| `transactions.csv` | Transaction lifecycle, priority, shard dependencies, queue-entry predictors, latency fields |
-| `decisions.csv` | Scheduler selections and CAPC diagnostic fields |
-| `dispatch_snapshots.csv` | Candidate, eligible, and blocked state at dispatch opportunities |
-| `state_events.csv` | Timestamped queue, worker, lock, and workload-state changes |
-| `summary.json` | Run-level latency, throughput, queue, fairness, starvation, and stability metrics |
-| `queue_recovery.json` | Burst recovery and queue-stability evidence |
-| `metadata.json` | Code/config/trace/environment provenance |
-| `effective_config.yaml` | Exact configuration used for that run |
+The analysis layer includes helpers for:
 
-See **[`docs/OUTPUT_SCHEMA.md`](docs/OUTPUT_SCHEMA.md)** for the complete schema.
+- paired treatment-baseline tables;
+- 10,000-resample paired bootstrap confidence intervals;
+- Holm adjustment for planned contrasts;
+- paired Wilcoxon fallback;
+- the primary log-p99 mixed-effects model;
+- the RQ2 waiting-time mixed-effects model using Static Atomic FIFO transactions from the arrival-based measurement window.
+
+Final statistical conclusions are intentionally reserved for the frozen primary dataset.
 
 ---
 
 ## Reproducibility controls
 
-The repository is designed to preserve the thesis paired-experiment logic:
+The repository enforces or records:
 
-- identical condition + seed produces the same exogenous trace;
-- the same trace is replayed across competing schedulers;
-- workload generation is separated from scheduler execution;
-- transaction IDs and tie-breaking are deterministic;
-- schedulers cannot alter required shards or service requirements;
-- raw observations are preserved before aggregation;
-- configuration and trace hashes are written with each run;
-- Git revision is recorded when available;
-- failed runs are not silently replaced with different seeds;
-- CAPC parameters remain fixed during final comparative runs.
+- treatment-independent workload generation;
+- deterministic separate random streams;
+- common trace replay across schedulers;
+- deterministic tie-breaking;
+- all-or-nothing atomic locks for matched treatments;
+- immutable transaction shard sets and service requirements;
+- configuration and trace hashes;
+- source revision when available;
+- raw data before aggregation;
+- failed-run logging without silent replacement seeds;
+- fixed CAPC parameters during final comparative runs.
 
 ---
 
-## Research boundary and limitations
+## Model limitations
 
-This is a **controlled logical discrete-event simulator**, not a production blockchain implementation.
+This is a **controlled logical discrete-event simulator**, not a production blockchain implementation. It intentionally abstracts away validator committees, consensus execution, peer-to-peer topology, cryptographic cost, smart-contract execution, physical IoT communication, and production-specific failure/retry semantics outside the declared coordination model.
 
-The current model deliberately excludes:
-
-- validator or committee formation;
-- consensus-protocol execution;
-- peer-to-peer network topology;
-- cryptographic verification cost;
-- smart-contract execution cost;
-- physical IoT communication delay;
-- production-specific retry/failure semantics outside the declared model.
-
-These exclusions are intentional because the thesis isolates a scheduling-layer intervention. Any production deployment claim would require separate implementation and validation on an actual or emulated sharded ledger.
+These are research-boundary exclusions rather than missing software features.
 
 ---
 
@@ -457,47 +416,48 @@ These exclusions are intentional because the thesis isolates a scheduling-layer 
 
 | Document | Purpose |
 |---|---|
-| [`COMPONENTS.md`](docs/COMPONENTS.md) | Every major software component, responsibility, input/output, and research role |
-| [`THESIS_TRACEABILITY.md`](docs/THESIS_TRACEABILITY.md) | Thesis requirement -> implementation component -> verification evidence |
+| [`COMPONENTS.md`](docs/COMPONENTS.md) | Component responsibilities and implementation design |
+| [`THESIS_TRACEABILITY.md`](docs/THESIS_TRACEABILITY.md) | Thesis requirement → code component → evidence |
 | [`VERIFICATION.md`](docs/VERIFICATION.md) | V1-V12 verification matrix |
-| [`DEVELOPMENT_VERIFICATION.md`](docs/DEVELOPMENT_VERIFICATION.md) | Verified development snapshot and evidence gate |
-| [`EXPERIMENT_PROTOCOL.md`](docs/EXPERIMENT_PROTOCOL.md) | Main experimental protocol summary |
-| [`OUTPUT_SCHEMA.md`](docs/OUTPUT_SCHEMA.md) | Raw output and provenance schema |
-| [`RESEARCH_INTEGRITY.md`](docs/RESEARCH_INTEGRITY.md) | Rules preventing post-hoc tuning and unsupported research claims |
-| [`GITHUB_SETUP.md`](docs/GITHUB_SETUP.md) | Practical steps for publishing the repository on GitHub |
+| [`DEVELOPMENT_VERIFICATION.md`](docs/DEVELOPMENT_VERIFICATION.md) | Development verification evidence |
+| [`END_TO_END_WORKFLOW.md`](docs/END_TO_END_WORKFLOW.md) | Verification → pilot → matrix → analysis workflow |
+| [`EXPERIMENT_PROTOCOL.md`](docs/EXPERIMENT_PROTOCOL.md) | Experimental protocol summary |
+| [`OUTPUT_SCHEMA.md`](docs/OUTPUT_SCHEMA.md) | Raw outputs and provenance schema |
+| [`RESEARCH_INTEGRITY.md`](docs/RESEARCH_INTEGRITY.md) | Guardrails against post-hoc tuning and unsupported claims |
+| [`GITHUB_SETUP.md`](docs/GITHUB_SETUP.md) | Repository publication/setup guidance |
 
 ---
 
-## Current project status
+## Current status
 
 | Item | Status |
 |---|---|
-| Core simulator implementation | ✅ Complete for Chapter 5 development scope |
+| Core discrete-event simulator | ✅ Implemented |
 | Five scheduler treatments | ✅ Implemented |
-| Automated tests | ✅ 29 passed |
-| Chapter 5 V1-V12 verification | ✅ 12/12 passed |
-| Paired trace-integrity smoke test | ✅ Passed |
-| Final CAPC parameter freeze | ⏳ Pending research decision |
-| Neutral thesis pilot | ⏳ Pending |
-| Final replication count `N` | ⏳ Pending |
-| Main `90N` experiment matrix | ⏳ Not yet executed |
-| Thesis performance conclusions | ⏳ Not yet established |
+| Paired workload replay | ✅ Implemented |
+| Atomic lock/worker coordination | ✅ Implemented |
+| Raw metrics and provenance | ✅ Implemented |
+| Paired starvation/preservation analysis | ✅ Implemented |
+| Neutral-pilot regime reporting | ✅ Implemented |
+| Automated tests | ✅ 31 passed in development verification |
+| Chapter 5 V1-V12 checks | ✅ PASS |
+| Final CAPC parameter freeze | ⏳ Research decision pending |
+| Neutral thesis pilot | ⏳ Not yet final evidence |
+| Final replication count `N` | ⏳ Pending pilot |
+| Main `90N` research matrix | ⏳ Not executed |
+| CAPC performance conclusions | ⏳ Not established |
 
-This distinction is intentional: **implementation evidence precedes performance evidence**.
+**Implementation evidence precedes performance evidence.**
 
 ---
 
 ## Citation
 
-A [`CITATION.cff`](CITATION.cff) file is included so that the repository can be cited as a research software artefact after it is published.
-
----
+A [`CITATION.cff`](CITATION.cff) file is included for citation of the research software artefact.
 
 ## Licence
 
-No open-source licence is automatically asserted by this research snapshot. See [`LICENSE-NOTICE.md`](LICENSE-NOTICE.md) before making the repository public. Select an appropriate licence only after confirming university, publication, and third-party-code requirements.
-
----
+No open-source licence is automatically asserted by this research snapshot. See [`LICENSE-NOTICE.md`](LICENSE-NOTICE.md) before selecting a licence, and confirm university/publication requirements first.
 
 ## Author
 
@@ -509,6 +469,6 @@ Research area: blockchain scalability, sharded blockchain coordination, and time
 
 <div align="center">
 
-**CAPC is evaluated as a scheduling-layer research mechanism: the code implements the mechanism; the experiments determine whether the hypothesis is supported.**
+**CAPC is a scheduling-layer research mechanism: the code implements the mechanism; the frozen experiments determine whether the hypothesis is supported.**
 
 </div>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -27,6 +28,26 @@ def git_commit() -> str:
         ).strip()
     except Exception:
         return "unknown"
+
+
+def physical_memory_bytes() -> int | None:
+    """Best-effort total physical-memory provenance without an extra dependency."""
+    try:
+        page_size = int(os.sysconf("SC_PAGE_SIZE"))
+        pages = int(os.sysconf("SC_PHYS_PAGES"))
+        if page_size > 0 and pages > 0:
+            return page_size * pages
+    except (AttributeError, OSError, ValueError):
+        pass
+    try:
+        value = subprocess.check_output(
+            ["sysctl", "-n", "hw.memsize"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        return int(value) if value else None
+    except Exception:
+        return None
 
 
 def package_versions() -> dict[str, str]:
@@ -94,7 +115,6 @@ def _dispatch_summary(dispatch_df: pd.DataFrame) -> dict:
         "dispatch_snapshots": int(len(dispatch_df)),
         "candidate_observations": candidates,
         "blocked_candidate_observations": blocked,
-        # Explicit implementation convention for the neutral-pilot diagnostic.
         "lock_block_fraction_candidate_observations": float(blocked / candidates) if candidates else 0.0,
         "dispatch_snapshots_with_any_block_fraction": any_block,
     }
@@ -179,8 +199,11 @@ def write_run_outputs(
         "trace_hash": trace.hash(),
         "git_commit": git_commit(),
         "python": sys.version,
+        "python_executable": sys.executable,
         "platform": platform.platform(),
+        "machine": platform.machine(),
         "processor": platform.processor(),
+        "physical_memory_bytes": physical_memory_bytes(),
         "packages": package_versions(),
         "cutoff_snapshot": cutoff_snapshot,
         "output_schema_version": OUTPUT_SCHEMA_VERSION,

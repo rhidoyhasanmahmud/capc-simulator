@@ -102,11 +102,22 @@ def fit_primary_p99_mixed_model(summary_df: pd.DataFrame):
     return model.fit(reml=False)
 
 
-def fit_rq2_waiting_mixed_model(transactions_df: pd.DataFrame):
-    """Chapter 3 RQ2 model for Static Atomic FIFO transaction records only."""
+def fit_rq2_waiting_mixed_model(
+    transactions_df: pd.DataFrame,
+    *,
+    warmup_s: float = 180.0,
+    duration_s: float = 1800.0,
+):
+    """Chapter 3 RQ2 model for Static Atomic FIFO transaction records only.
+
+    Transactions are included by the same arrival-based measurement window used
+    by the latency analysis. The simulation run remains the clustering unit.
+    """
     df = transactions_df[
         (transactions_df["scheduler"] == "static_atomic_fifo")
         & (transactions_df["is_cross_shard"] == True)
+        & (transactions_df["arrival_time"] >= warmup_s)
+        & (transactions_df["arrival_time"] < duration_s)
         & transactions_df["waiting_time"].notna()
     ].copy()
     if "run_id" not in df:
@@ -117,7 +128,6 @@ def fit_rq2_waiting_mixed_model(transactions_df: pd.DataFrame):
         " + dependency_degree + active_lock_conflicts_at_entry"
         " + C(workload_state) + C(shard_count) + C(cross_shard_ratio) + C(workers)"
     )
-    # Matrix-level transaction files should be augmented with condition columns by the loader.
     missing = [c for c in ("shard_count", "cross_shard_ratio", "workers") if c not in df]
     if missing:
         raise ValueError(f"RQ2 model requires condition columns: {', '.join(missing)}")

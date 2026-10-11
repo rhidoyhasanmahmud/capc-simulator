@@ -12,7 +12,7 @@ This file records the Static Atomic FIFO-only replication-count selection eviden
 - Experimental conditions: 3 shard counts x 3 cross-shard ratios x 2 worker counts = 18 conditions
 - Candidate replication counts: `{30, 40, 50, 60}`
 - Precision target: 95% CI half-width for baseline mean log-p99 `<= 0.05`
-- Conservative selection rule used in the analysis: the candidate N is accepted only if all 18 fixed conditions meet the target.
+- Conservative selection rule used in the analysis: accept a candidate N only if all 18 fixed conditions meet the target.
 
 The simulator hashes each condition-specific effective configuration, so 18 effective configuration hashes are expected across the 18 matrix conditions.
 
@@ -141,12 +141,84 @@ Combined provenance audit:
 
 ---
 
+## N = 50 candidate
+
+Additional output directory:
+
+`results/replication_precision_n41_50_282ee70e`
+
+Additional execution:
+
+- Seeds: `41-50`
+- Additional runs: `180`
+- Regime coverage: `PASS`
+- Wall time: `1611.71 s`
+- User CPU time: `1496.05 s`
+- System CPU time: `88.08 s`
+
+Combined analysis directory:
+
+`results/replication_precision_n50_combined_282ee70e`
+
+Combined evidence:
+
+- Seeds: `1-50`
+- Total runs represented: `900`
+
+Condition-level precision result:
+
+| Shards | Cross-shard ratio | Workers | Half-width log-p99 | Pass |
+|---:|---:|---:|---:|---|
+| 4 | 0.10 | 2 | 0.012909 | Yes |
+| 4 | 0.10 | 4 | 0.012909 | Yes |
+| 4 | 0.30 | 2 | 0.022309 | Yes |
+| 4 | 0.30 | 4 | 0.022309 | Yes |
+| 4 | 0.50 | 2 | 0.056660 | No |
+| 4 | 0.50 | 4 | 0.056660 | No |
+| 8 | 0.10 | 2 | 0.005666 | Yes |
+| 8 | 0.10 | 4 | 0.005774 | Yes |
+| 8 | 0.30 | 2 | 0.012142 | Yes |
+| 8 | 0.30 | 4 | 0.012151 | Yes |
+| 8 | 0.50 | 2 | 0.020888 | Yes |
+| 8 | 0.50 | 4 | 0.014276 | Yes |
+| 16 | 0.10 | 2 | 0.006875 | Yes |
+| 16 | 0.10 | 4 | 0.007035 | Yes |
+| 16 | 0.30 | 2 | 0.010949 | Yes |
+| 16 | 0.30 | 4 | 0.007985 | Yes |
+| 16 | 0.50 | 2 | 0.025277 | Yes |
+| 16 | 0.50 | 4 | 0.008741 | Yes |
+
+Summary:
+
+- Conditions passed: `16/18`
+- Conditions failed: `2/18`
+- Worst condition: shards `4`, cross-shard ratio `0.50`, workers `2`
+- Worst half-width: `0.05666007335602427`
+- Decision: `EXTEND_TO_N_60`
+
+Combined provenance audit:
+
+- Metadata files: `900`
+- All 900 metadata files present: `true`
+- Git commits: only `282ee70e735294bde8500de15a8c376d0cfdd94c`
+- All runs on frozen Git revision: `true`
+- Scheduler set: only `static_atomic_fifo`
+- Only Static Atomic FIFO: `true`
+- Effective configuration hash count: `18`
+- Expected 18 condition-specific effective configurations: `true`
+
+---
+
 ## Interpretation boundary
 
-The N=30 and N=40 exercises are baseline precision evidence only. They determine replication sufficiency before labelled CAPC comparative effects are inspected. They are not evidence that CAPC improves or degrades latency, throughput, fairness, starvation, or stability.
+The N=30, N=40, and N=50 exercises are baseline precision evidence only. They determine replication sufficiency before labelled CAPC comparative effects are inspected. They are not evidence that CAPC improves or degrades latency, throughput, fairness, starvation, or stability.
 
-At N=40, the same two high cross-shard-demand four-shard conditions remain above the predeclared 0.05 precision threshold, so the protocol requires extension to N=50 using consecutive seeds `41-50` only. Existing seeds are not rerun, removed, or replaced.
+Across N=30, N=40, and N=50, the same two four-shard, 50%-cross-shard conditions remain above the 0.05 precision threshold. Their observed half-width decreases from about `0.07028` at N=30, to `0.06046` at N=40, to `0.05666` at N=50, but remains insufficient under the conservative all-condition rule.
+
+The protocol therefore proceeds to the maximum candidate N=60 using consecutive seeds `51-60` only. Existing seeds are not rerun, removed, or replaced.
 
 ## Next step
 
-Run Static Atomic FIFO for seeds `41-50` across all 18 conditions, combine with seeds `1-40`, and evaluate the N=50 candidate using the same condition-level log-p99 half-width rule. If any condition still exceeds 0.05, extend once more to N=60 using seeds `51-60`.
+Run Static Atomic FIFO for seeds `51-60` across all 18 conditions, combine with seeds `1-50`, and evaluate the N=60 candidate using the same condition-level log-p99 half-width rule.
+
+Because N=60 is the predeclared maximum candidate, the replication count will be frozen at N=60 even if one or more conditions remain above 0.05; any remaining baseline-precision limitation will then be reported transparently rather than corrected by adding post-hoc seeds.

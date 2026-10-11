@@ -46,6 +46,7 @@ class Simulator:
         self.recorder = MetricsRecorder(self.run_id, self.seed, scheduler_name)
         self.events: list[Event] = []
         self.seq = 0
+        self._events_processed = 0
         self.cutoff_snapshot: dict = {}
         self._scheduled_completion_tx_ids: set[int] = set()
 
@@ -95,7 +96,20 @@ class Simulator:
                 self._cutoff(now)
             else:
                 raise RuntimeError(f"Unsupported event kind: {event.kind}")
-            self._assert_invariants()
+            self._events_processed += 1
+
+            # Development/verification keeps exhaustive per-event checks.
+            # Primary research runs periodically execute the same full checks
+            # to avoid quadratic verification overhead on large traces.
+            if (
+                self.config.research.mode != "primary"
+                or self._events_processed % 1000 == 0
+                or event.kind is EventKind.CUTOFF
+            ):
+                self._assert_invariants()
+
+        # Always perform one exhaustive final-state validation.
+        self._assert_invariants()
 
         # The arrival horizon stops at duration_s; admitted cross-shard work then drains.
         if self.queue or self.workers.active_count:

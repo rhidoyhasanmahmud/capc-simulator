@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
@@ -10,6 +10,26 @@ import pandas as pd
 class PiecewiseState:
     times: np.ndarray
     values: np.ndarray
+    cumulative_area: np.ndarray = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        times = np.asarray(self.times, dtype=float)
+        values = np.asarray(self.values, dtype=float)
+
+        if times.ndim != 1 or values.ndim != 1:
+            raise ValueError("times and values must be one-dimensional")
+        if len(times) != len(values):
+            raise ValueError("times and values must have equal length")
+        if len(times) > 1 and np.any(np.diff(times) < 0):
+            raise ValueError("times must be sorted in non-decreasing order")
+
+        cumulative = np.zeros(len(times), dtype=float)
+        if len(times) > 1:
+            cumulative[1:] = np.cumsum(values[:-1] * np.diff(times))
+
+        object.__setattr__(self, "times", times)
+        object.__setattr__(self, "values", values)
+        object.__setattr__(self, "cumulative_area", cumulative)
 
 
 def canonical_state(state_df: pd.DataFrame, field: str) -> PiecewiseState:
@@ -22,23 +42,27 @@ def canonical_state(state_df: pd.DataFrame, field: str) -> PiecewiseState:
 
 
 def value_at(series: PiecewiseState, t: float) -> float:
-    idx = int(np.searchsorted(series.times, t, side="right") - 1)
+    idx = int(series.times.searchsorted(t, side="right") - 1)
     if idx < 0:
         return 0.0
     return float(series.values[idx])
 
 
+def _area_to(series: PiecewiseState, t: float) -> float:
+    """Exact integral of the piecewise-constant series up to time t."""
+    idx = int(series.times.searchsorted(t, side="right") - 1)
+    if idx < 0:
+        return 0.0
+    return float(
+        series.cumulative_area[idx]
+        + series.values[idx] * (t - series.times[idx])
+    )
+
+
 def integral(series: PiecewiseState, start: float, end: float) -> float:
     if end <= start:
         return 0.0
-    breakpoints = [start]
-    mask = (series.times > start) & (series.times < end)
-    breakpoints.extend(float(x) for x in series.times[mask])
-    breakpoints.append(end)
-    total = 0.0
-    for a, b in zip(breakpoints[:-1], breakpoints[1:]):
-        total += value_at(series, a) * (b - a)
-    return float(total)
+    return float(_area_to(series, end) - _area_to(series, start))
 
 
 def time_weighted_mean(state_df: pd.DataFrame, field: str, start: float, end: float) -> float:

@@ -1,144 +1,83 @@
-# CAPC Simulator Component Guide
+# CAPC Simulator — Component Guide
 
-This document describes every major component in the repository, what it does, what it receives, what it produces, and how it maps to the thesis implementation design.
+This document explains the implementation role of each major repository component and how it supports the Chapter 3 methodology and Chapter 4 CAPC design. The simulator is intentionally modular so that scheduler treatment is the manipulated mechanism while workload generation, locking, worker capacity, service time, and measurement remain controlled.
 
 ## 1. Configuration layer
 
 ### `src/capc_sim/config/schema.py`
-**Purpose:** Defines the typed experiment configuration and validates research constraints before a run starts.
+Defines typed configuration objects and validates simulation, workload, sharding, priority, coordination, matrix, and CAPC settings.
 
-**Key responsibilities**
-- simulation duration and warm-up;
-- MMPP NORMAL/BURST parameters;
-- shard count and cross-shard ratio;
-- two-/three-shard dependency mix;
-- priority-class composition;
-- coordination worker count and service-time range;
-- CAPC observation windows, normalization references, weights, aging horizon, gamma, and thresholds;
-- main experiment matrix levels.
-
-**Important rule:** `configs/primary_template.yaml` cannot be used for final comparative execution until the CAPC parameters are frozen.
+Important research control: when `research.require_frozen_capc` is enabled, missing CAPC parameters cause configuration validation to fail instead of silently substituting development values.
 
 ### `src/capc_sim/config/loader.py`
-**Purpose:** Loads YAML, converts it to the typed configuration object, serializes effective configurations, and calculates a deterministic configuration hash.
+Loads YAML configuration, converts it to the typed schema, creates deterministic configuration hashes, and writes effective configurations to run outputs.
 
-**Output:** an `ExperimentConfig` object plus reproducibility metadata.
+### `configs/dev.yaml`
+Runnable development/smoke-test configuration. Its CAPC numbers exist only to exercise the implementation and must not automatically become thesis parameters.
+
+### `configs/primary_template.yaml`
+Research configuration template. Methodology-level values are present, while final CAPC numerical parameters remain `null` until the Chapter 4 parameter-freezing decision is completed.
 
 ---
 
 ## 2. Workload layer
 
 ### `src/capc_sim/workload/mmpp.py`
-**Purpose:** Generates the exogenous two-state MMPP workload independently of scheduler execution.
+Implements the two-state NORMAL/BURST MMPP workload. Independent deterministic random streams are used for state transitions, inter-arrivals, intra/cross-shard classification, dependency degree, shard assignment, priority, and service time.
 
-**Model implemented**
-- NORMAL arrival rate: `lambda_normal`;
-- BURST arrival rate: `lambda_burst`;
-- NORMAL→BURST transition rate: `q_normal_to_burst`;
-- BURST→NORMAL transition rate: `q_burst_to_normal`;
-- deterministic initial state;
-- independent random streams derived from one root seed.
-
-**Why separate random streams?** A scheduler must never change future arrivals, priorities, shard assignments, or service requirements by consuming extra random numbers.
+Research purpose: scheduler-specific code cannot alter future exogenous workload values.
 
 ### `src/capc_sim/workload/trace.py`
-**Purpose:** Stores the fully materialized transaction trace and NORMAL/BURST state intervals.
-
-**Key feature:** `Trace.hash()` gives a deterministic SHA-256 identity. The matrix runner checks that paired scheduler runs use exactly the same trace hash.
-
-**Files written**
-- `trace.csv`
-- `workload_states.csv`
+Stores the complete scheduler-independent transaction trace and workload-state intervals. It provides a canonical trace hash and CSV serialization so paired treatments can prove they consumed the same exogenous input.
 
 ---
 
 ## 3. Core model layer
 
-### `src/capc_sim/model/enums.py`
-Defines workload state, priority class, and transaction lifecycle state.
-
 ### `src/capc_sim/model/transaction.py`
-Separates immutable exogenous transaction attributes from mutable execution state.
+Represents immutable transaction attributes plus mutable lifecycle state. Key fields include transaction ID, arrival, required shards, priority, workload state, service requirement, queue-entry time, service start, completion, and queue-entry RQ2 predictors.
 
-**Immutable research attributes**
-- transaction ID;
-- arrival time;
-- priority class;
-- workload state;
-- required shard set;
-- service requirement;
-- intra-/cross-shard classification.
-
-**Mutable lifecycle fields**
-- queue-entry time;
-- service-start time;
-- completion time;
-- worker assignment;
-- queue-entry RQ2 predictors;
-- cutoff completion flag.
+### `src/capc_sim/model/enums.py`
+Defines workload, priority, and transaction lifecycle enums.
 
 ### `src/capc_sim/model/events.py`
-Defines deterministic event ordering for arrival, service completion, and the measurement cutoff.
+Defines deterministic discrete-event ordering for arrivals, completions, and the arrival-horizon cutoff.
 
 ---
 
 ## 4. Coordination layer
 
 ### `src/capc_sim/coordinator/queue.py`
-**Purpose:** Stores pending cross-shard transactions without implementing scheduling policy.
-
-This separation is important: the queue owns data, while the scheduler owns service-order decisions.
+Stores pending cross-shard transactions. It does not decide service order; scheduler implementations operate over the same queue abstraction.
 
 ### `src/capc_sim/coordinator/worker_pool.py`
-**Purpose:** Models finite coordination capacity.
-
-A worker services at most one transaction at a time. The simulator supports the thesis worker levels of 2 and 4, while tests can use other positive values for verification.
+Models finite coordination capacity. A worker services at most one cross-shard transaction at a time.
 
 ### `src/capc_sim/coordinator/lock_manager.py`
-**Purpose:** Implements all-or-nothing logical shard locking for matched atomic treatments.
+Implements the matched atomic boundary:
 
-**Invariants**
-- no partial lock acquisition by a waiting transaction;
-- a shard has at most one in-service owner;
-- all required locks are acquired together;
+- all required shard locks must be available before service;
+- acquisition is all-or-nothing;
+- waiting transactions never hold partial locks;
+- locks remain held for the full non-preemptive service interval;
 - all locks are released together at completion;
-- recent per-shard occupancy history is retained for CAPC lock-pressure calculation.
-
-This module is the implementation boundary that distinguishes the matched atomic schedulers from Diagnostic FIFO.
+- per-shard occupancy history supports recent-lock-pressure calculation.
 
 ---
 
 ## 5. Scheduler layer
 
 ### `src/capc_sim/scheduler/base.py`
-Defines the common selection contract. A scheduler selects a transaction; it does **not** acquire locks, allocate workers, or complete service.
+Defines the common scheduler selection contract. A scheduler chooses a transaction; lock acquisition, worker allocation, and completion remain in the shared simulator/coordinator path.
 
 ### `src/capc_sim/scheduler/diagnostic_fifo.py`
-**Purpose:** Non-atomic descriptive queue-order reference.
-
-**Rule:** oldest waiting cross-shard request when a worker is free.
-
-**Research role:** descriptive only; excluded from causal matched comparisons.
+Non-atomic descriptive reference. It selects the oldest waiting request and is intentionally excluded from matched causal inference.
 
 ### `src/capc_sim/scheduler/static_atomic_fifo.py`
-**Purpose:** Principal matched baseline.
-
-**Rule:** select the earliest-arriving transaction among those whose required shards are currently unlocked.
-
-If the oldest queued transaction is blocked, it remains queued and the next eligible transaction can be selected. This avoids artificial head-of-line blocking.
+Principal matched baseline. It filters to currently eligible transactions and selects the earliest-arriving eligible transaction. A blocked oldest transaction remains queued while another eligible transaction may proceed.
 
 ### `src/capc_sim/scheduler/capc.py`
-**Purpose:** Full CAPC scheduler.
-
-For each eligible transaction, it calculates:
-- urgency `U_i`;
-- normalized waiting age `A_i(t)`;
-- normalized dependency burden `D_i`;
-- recent lock pressure `H_i(t)`;
-- global contention score `C(t)`;
-- final CAPC ranking score `S_i(t)`.
-
-Implemented ranking structure:
+Implements full CAPC. For each eligible transaction it evaluates urgency, bounded waiting age, dependency burden, recent required-shard lock pressure, global contention, and the final CAPC score:
 
 ```text
 S_i(t) = w_U U_i + w_A A_i(t)
@@ -146,72 +85,62 @@ S_i(t) = w_U U_i + w_A A_i(t)
            [w_D (1 - D_i) + w_H (1 - H_i(t))]
 ```
 
-Instantaneous active-lock conflict `K_i(t)` is used for eligibility and RQ2 logging, not as a ranking term after eligibility filtering.
+Instantaneous active-lock conflict `K_i(t)` is used for eligibility and RQ2 logging, not as an additive ranking feature after eligibility filtering.
 
-**Tie-breaking:** higher score → greater age → earlier queue entry/arrival → lower transaction ID.
+Tie-breaking is deterministic: higher score → greater age → earlier arrival/queue entry → lower transaction ID.
 
 ### `src/capc_sim/scheduler/capc_no_contention.py`
-Ablation of full CAPC with `gamma = 0` at runtime. All other logic is inherited from the full CAPC implementation.
+Ablation using the same CAPC code path with contention amplification disabled (`gamma = 0`).
 
 ### `src/capc_sim/scheduler/capc_no_priority.py`
-Ablation of full CAPC with urgency weight treated as zero. All other logic is inherited from the full CAPC implementation.
+Ablation using the same CAPC code path with urgency contribution disabled.
 
 ### `src/capc_sim/scheduler/factory.py`
-Creates the selected scheduler from a configuration/CLI name.
+Creates the selected scheduler from its experiment label.
 
 ---
 
-## 6. Runtime state and simulation engine
+## 6. Runtime state and discrete-event engine
 
 ### `src/capc_sim/simulation/state.py`
-**Purpose:** Computes the state visible to schedulers.
+Provides the read-only scheduling view and implements:
 
-**Global contention components**
-- recent cross-shard arrival pressure;
-- normalized queue pressure;
-- mean dependency pressure;
-- active lock pressure.
-
-**Transaction-specific components**
-- urgency;
-- bounded aging;
-- dependency burden;
-- instantaneous lock conflict;
-- recent required-shard lock occupancy.
-
-The module separates global state from candidate-specific features so that global constants are not incorrectly used as candidate-ranking terms.
+- recent cross-shard arrival rate;
+- normalized arrival and queue pressure;
+- dependency pressure;
+- active-lock pressure;
+- global contention score;
+- urgency mapping;
+- monotonic aging;
+- instantaneous lock-conflict count;
+- recent transaction-specific lock pressure;
+- atomic eligibility filtering.
 
 ### `src/capc_sim/simulation/engine.py`
-**Purpose:** Executes the discrete-event lifecycle.
+Executes the transaction lifecycle:
 
-**Event flow**
-1. transaction arrives;
-2. intra-shard transaction bypasses the cross-shard queue;
-3. cross-shard transaction enters the coordination queue;
-4. queue-entry RQ2 predictors are recorded;
-5. while workers are free, the active scheduler selects work;
-6. matched atomic treatments acquire all required shard locks;
-7. non-preemptive service begins;
-8. completion releases locks and worker capacity;
-9. scheduler is triggered again;
-10. arrivals stop at the configured cutoff, then admitted work drains.
+1. arrival;
+2. intra-shard bypass or cross-shard enqueue;
+3. queue-entry predictor capture;
+4. repeated scheduling while workers remain free;
+5. atomic lock acquisition for matched treatments;
+6. non-preemptive service;
+7. completion and lock release;
+8. re-dispatch after state changes;
+9. arrival cutoff followed by drain of admitted work.
 
-**Important invariant:** after each event the engine checks transaction state and lock/worker consistency.
+The engine checks transaction, lock, and worker invariants after events.
 
 ---
 
 ## 7. Metrics and provenance layer
 
 ### `src/capc_sim/metrics/recorder.py`
-Records three event streams:
-- `state_events`: queue length, active workers, locked shards, workload state;
-- `decisions`: scheduler selection and CAPC diagnostic fields;
-- `dispatch_snapshots`: candidate, eligible, and blocked counts at dispatch opportunities.
+Captures state events, scheduler decisions, and dispatch snapshots. These logs preserve queue/eligibility dynamics rather than only final averages.
 
 ### `src/capc_sim/metrics/outputs.py`
-Writes the complete run artefact.
+Writes the per-run research artefact:
 
-**Per-run files**
 - `trace.csv`
 - `workload_states.csv`
 - `transactions.csv`
@@ -223,153 +152,99 @@ Writes the complete run artefact.
 - `metadata.json`
 - `effective_config.yaml`
 
-**Provenance metadata includes**
-- configuration hash;
-- trace hash;
-- Git commit when available;
-- Python/platform information;
-- installed package versions;
-- cutoff snapshot;
-- output schema version.
+`metadata.json` records configuration/trace hashes, source revision when available, Python executable/runtime, platform, machine, processor, best-effort physical memory, package versions, and cutoff state.
 
 ---
 
 ## 8. Analysis layer
 
 ### `src/capc_sim/analysis/state_series.py`
-Implements exact piecewise-state operations from event logs:
-- time-weighted means;
-- continuous-time least-squares queue slope;
-- sliding queue mean;
-- sustained post-burst recovery detection.
-
-This avoids arbitrary fixed-interval polling for queue summaries.
+Performs exact piecewise-state calculations from timestamped state changes, including time-weighted means, continuous-time queue slope, moving averages, and sustained recovery detection.
 
 ### `src/capc_sim/analysis/run_metrics.py`
-Calculates run-level metrics:
-- mean/median/p95/p99 cross-shard latency;
-- p95-minus-median latency spread;
-- waiting and service times;
-- cross-shard coordination throughput;
-- time-weighted mean/max queue length;
-- final queue slope;
-- worker utilization;
-- class completion ratios and Jain index;
-- RQ2 run-level predictor summaries;
-- post-burst recovery and queue-stability classification.
+Produces run-level latency, waiting, service, throughput, queue, worker-utilization, Jain-index, unfinished-work, recovery/stability, and RQ2 predictor summaries.
 
 ### `src/capc_sim/analysis/paired.py`
-Contains fairness/starvation helpers and re-exports paired statistical utilities.
+Contains the Equation 3.9 starvation-threshold helper, starvation incidence, Jain completion-ratio helper, and paired-statistics exports.
+
+### `src/capc_sim/analysis/preservation.py`
+Completes paired matrix post-processing. For each condition/seed it derives the starvation threshold from the matched Static Atomic FIFO waiting distribution:
+
+```text
+max(0.50 s, 5 × baseline median waiting time)
+```
+
+It applies that threshold to paired treatments, enriches run summaries, and calculates deterministic CAPC-versus-baseline preservation checks for p99, throughput, Jain index, starvation, low-priority p95 waiting, and queue stability.
+
+It deliberately does not declare overall CAPC success because final inference also requires paired uncertainty across seeds.
 
 ### `src/capc_sim/analysis/loaders.py`
-Loads matrix-level transaction and summary files for offline RQ2 and comparative analysis. It deliberately lives outside the simulator core so data loading cannot influence event-level execution.
+Loads matrix-level run summaries and transaction records for offline analysis.
 
 ### `src/capc_sim/analysis/statistics.py`
-Provides reusable functions for:
+Provides:
+
 - paired bootstrap confidence intervals;
-- paired treatment-baseline tables;
+- paired metric tables;
 - Wilcoxon paired fallback;
 - Holm adjustment;
-- the predeclared primary p99 mixed model;
-- the RQ2 waiting-time mixed model.
-
-These functions support later Chapter 6 analysis; they do not alter simulation execution.
+- primary log-p99 mixed-effects model;
+- RQ2 waiting-time mixed-effects model restricted to Static Atomic FIFO transactions within the arrival-based measurement window.
 
 ---
 
 ## 9. Experiment orchestration
 
 ### `src/capc_sim/experiments/runner.py`
-Runs one simulation or the paired experiment matrix.
+Executes one run or the paired matrix. One trace is generated for each condition/seed and replayed under all selected treatments. Failed runs are logged rather than silently replaced with different seeds.
 
-**Pairing guarantee:** one trace is generated for each condition/seed and replayed under all requested treatments.
-
-**Matrix outputs**
-- `matrix_summary.csv`
-- `pair_integrity.csv`
-- `matrix_manifest.json`
-- `failures.json`
-
-Failed runs are recorded; replacement seeds are never silently substituted.
+Matrix-level outputs include `matrix_summary.csv`, `pair_integrity.csv`, `matrix_manifest.json`, and `failures.json`.
 
 ### `src/capc_sim/experiments/pilot.py`
-Supports the neutral Static Atomic FIFO pilot and the Chapter 3 candidate replication counts `{30, 40, 50, 60}`.
+Implements neutral Static Atomic FIFO pilot support, baseline log-p99 precision calculations for candidate `N ∈ {30,40,50,60}`, scheduler-neutral raw utilization, and LOW/TRANSITIONAL/HIGH contention-regime reporting.
 
-It contains utilities for:
-- raw coordination utilization;
-- baseline log-p99 precision half-width;
-- selecting the smallest candidate `N` satisfying the predeclared precision target;
-- neutral-pilot execution without labelled CAPC performance.
+The pilot never uses labelled CAPC performance to choose readiness settings.
 
 ### `src/capc_sim/experiments/sensitivity.py`
-Generates the predeclared sensitivity families for:
-- burst intensity;
-- burst persistence;
-- dependency mix;
-- service-time multiplier;
-- CAPC ranking weights;
-- CAPC contention weights;
-- interpretation thresholds.
-
-Sensitivity generation is separate from the primary matrix so that sensitivity runs cannot be accidentally mixed with confirmatory results.
+Generates the predeclared workload, dependency, service-time, CAPC-weight, and threshold sensitivity configurations separately from the primary matrix.
 
 ### `src/capc_sim/experiments/verify.py`
-Implements the Chapter 5 V1–V12 implementation verification report.
-
-The checks cover reproducibility, paired trace equality, FIFO ordering, lock exclusion/release, multi-worker dispatch, CAPC score correctness, aging, accounting, low-load sanity, and overload queue growth.
+Implements the V1-V12 Chapter 5 verification matrix covering trace reproducibility, scheduler ordering, lock safety/release, multi-worker dispatch, CAPC score checks, aging, accounting, low-load sanity, and overload queue growth.
 
 ---
 
 ## 10. Command-line interface
 
 ### `src/capc_sim/cli.py`
-Provides the `capc-sim` command:
+Provides:
 
 ```text
 capc-sim run
 capc-sim matrix
 capc-sim pilot
+capc-sim analyze
 capc-sim verify
 ```
 
-The `scripts/` directory contains small Python wrappers for the same commands.
+The `analyze` command performs paired starvation/preservation post-processing after a matrix run.
 
 ---
 
-## 11. Configurations
-
-### `configs/dev.yaml`
-Runnable **development-only** settings. The CAPC numbers here exist only to exercise and verify the implementation.
-
-### `configs/primary_template.yaml`
-Thesis primary configuration template. CAPC numerical values are intentionally `null` until the Chapter 4 parameter-freezing decision is complete.
-
-The primary template is designed to fail validation while those values remain unset.
-
----
-
-## 12. Verification tests
+## 11. Tests
 
 ### `tests/unit/`
-Tests isolated formulae, configuration rules, lock behavior, queue behavior, MMPP reproducibility, CAPC features, fairness helpers, and piecewise-state analysis.
+Tests configuration, MMPP determinism, queue/lock functions, CAPC features, fairness/starvation helpers, preservation calculations, and piecewise-state analysis.
 
 ### `tests/integration/`
-Tests complete event flows, atomic lock exclusion, non-atomic Diagnostic FIFO behavior, multi-worker execution, output provenance, and the V1–V12 verification report.
+Tests complete event flows, matched atomicity, diagnostic behaviour, multi-worker execution, output/provenance, and the V1-V12 report.
 
 ### `tests/regression/`
-Tests deterministic replay and cross-scheduler exogenous trace equality.
+Tests deterministic replay and cross-treatment exogenous trace equality.
 
 ---
 
-## 13. Research boundary
+## 12. Research boundary
 
-The repository deliberately does **not** model:
-- production blockchain consensus;
-- validator committees;
-- cryptographic execution;
-- P2P networking;
-- smart-contract execution;
-- physical IoT network latency;
-- protocol-specific rollback/retry behavior beyond the defined coordination abstraction.
+The simulator deliberately does not model production consensus execution, validator committees, P2P topology, cryptographic cost, smart-contract execution, physical IoT communication, or protocol-specific production failure/retry behaviour outside the declared coordination abstraction.
 
-These are exclusions of the thesis simulation boundary, not missing software features.
+These are explicit thesis-scope exclusions, not unfinished implementation components.

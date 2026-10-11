@@ -240,6 +240,29 @@ Current development verification: **V1-V12 PASS**.
 
 ---
 
+## Runtime optimization validation
+
+Before the neutral thesis pilot, the primary-mode execution path was profiled and two implementation-only optimizations were applied:
+
+- exhaustive simulator invariants remain enabled for development/verification runs, while large primary runs use periodic checks plus cutoff and final-state validation;
+- exact piecewise-constant queue integrals use a cumulative-area representation instead of repeatedly rescanning all state breakpoints.
+
+These changes do **not** alter workload generation, scheduling rules, lock semantics, service times, random seeds, recorded metrics, or the experimental design.
+
+Validation evidence for the reference Static Atomic FIFO run:
+
+```text
+Automated tests                 31/31 PASS
+Chapter 5 verification          V1-V12 PASS
+Pre/post summary comparison     PASS (equivalent within 1e-12)
+Reference runtime               44.26 s -> 10.19 s
+Representative high-contention  14.70 s
+```
+
+The reference runtime reduction is approximately **77%** (about **4.34x faster**). These measurements are engineering/readiness evidence only; they are **not CAPC performance findings** and are not used to select CAPC parameters.
+
+---
+
 ## Run one development simulation
 
 ```bash
@@ -441,6 +464,7 @@ These are research-boundary exclusions rather than missing software features.
 | Neutral-pilot regime reporting | ✅ Implemented |
 | Automated tests | ✅ 31 passed in development verification |
 | Chapter 5 V1-V12 checks | ✅ PASS |
+| Primary-run runtime optimization | ✅ Validated with equivalent summary outputs |
 | Final CAPC parameter freeze | ⏳ Research decision pending |
 | Neutral thesis pilot | ⏳ Not yet final evidence |
 | Final replication count `N` | ⏳ Pending pilot |

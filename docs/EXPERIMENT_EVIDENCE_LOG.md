@@ -12,7 +12,7 @@ The log distinguishes implementation/verification evidence from performance find
 - Record the executing Git commit and configuration hash for every final run.
 - Do not delete or overwrite completed evidence directories; use a new output directory for reruns.
 - Do not add, remove, or replace seeds after labelled comparative effects are inspected.
-- Neutral-pilot and runtime-readiness evidence are not CAPC comparative performance findings.
+- Neutral-pilot, runtime-readiness, calibration, and replication-precision evidence are not CAPC comparative performance findings.
 
 ---
 
@@ -255,44 +255,138 @@ Freeze rule: these primary CAPC parameters must not be retuned using labelled CA
 
 ---
 
-## E7 — Current experiment status
+## E7 — Final replication freeze
+
+Status: **FROZEN — N = 60 WITH DECLARED PRECISION LIMITATION**
+
+Replication selection used Static Atomic FIFO only and was completed before any labelled CAPC comparative-performance result was inspected.
+
+Frozen execution provenance for the precision exercise:
+
+- Precision-pilot Git revision: `282ee70e735294bde8500de15a8c376d0cfdd94c`.
+- Frozen primary YAML SHA-256: `be25b6dc8c89c3a49b891ea4c69e1c1dfe38b6e117d577bd8026c2d0094ba875`.
+- Scheduler: `static_atomic_fifo` only.
+- Fixed conditions: `3` shard counts x `3` cross-shard ratios x `2` worker counts = `18` conditions.
+- Candidate replication counts: `{30, 40, 50, 60}`.
+- Precision target: 95% CI half-width for baseline mean log-p99 `<= 0.05` in every fixed condition.
+- Predeclared maximum candidate: `N = 60`.
+
+Candidate history:
+
+| Candidate N | Conditions passing | Conditions failing | Worst half-width | Decision |
+|---:|---:|---:|---:|---|
+| 30 | 16/18 | 2/18 | 0.0702766675 | Extend to N=40 |
+| 40 | 16/18 | 2/18 | 0.0604617338 | Extend to N=50 |
+| 50 | 16/18 | 2/18 | 0.0566600734 | Extend to N=60 |
+| 60 | 16/18 | 2/18 | 0.0515515907 | Freeze N=60 with residual limitation |
+
+Final replication decision:
+
+- Replication count: **`N = 60`**.
+- Frozen seeds: consecutive **`1-60`**.
+- Decision label: `FREEZE_N_60_WITH_PRECISION_LIMITATION`.
+- Total Static Atomic FIFO runs represented in the precision exercise: `1,080`.
+- Provenance audit: `1,080` metadata files; only precision revision `282ee70e735294bde8500de15a8c376d0cfdd94c`; only `static_atomic_fifo`; `18` expected condition-specific effective configuration hashes.
+
+Residual precision limitations at N=60:
+
+- `4` shards, cross-shard ratio `0.50`, `2` workers: half-width `0.0515515907`.
+- `4` shards, cross-shard ratio `0.50`, `4` workers: half-width `0.0515515907`.
+
+Because `N = 60` was the maximum predeclared candidate, no additional seeds are added. These two residual cases must be reported transparently rather than corrected post hoc.
+
+Interpretation: replication-selection and methodological-precision evidence only; not CAPC comparative-performance evidence.
+
+---
+
+## E8 — Final pre-main-experiment readiness gate
+
+Status: **PASS**
+
+Final local verification completed on `2026-10-12` before the main comparative matrix:
+
+- Automated test suite: `31/31 PASS` (`31 passed in 9.24 s`).
+- Deterministic verification: `V1-V12 PASS`.
+- CAPC score hand-check V8: computed `0.858750000000`, expected `0.858750000000`.
+- Working tree before documentation synchronization: clean.
+- Verified source/config revision used for the final local gate: `282ee70e735294bde8500de15a8c376d0cfdd94c`.
+- Frozen `configs/primary.yaml` SHA-256: `be25b6dc8c89c3a49b891ea4c69e1c1dfe38b6e117d577bd8026c2d0094ba875`.
+
+The subsequent fast-forward from `282ee70e...` to `d10baa86...` changed documentation only (`README.md`, `docs/REPLICATION_FREEZE.md`, and `docs/REPLICATION_PRECISION_LOG.md`); no simulator source, test, or primary-configuration file changed.
+
+Frozen main comparative matrix:
+
+- Shard counts: `4, 8, 16`.
+- Cross-shard ratios: `0.10, 0.30, 0.50`.
+- Coordination workers: `2, 4`.
+- Scheduler treatments: `diagnostic_fifo`, `static_atomic_fifo`, `capc`, `capc_no_contention`, `capc_no_priority`.
+- Seeds: consecutive `1-60`.
+- Planned runs: `3 x 3 x 2 x 5 x 60 = 5,400`.
+
+Research-integrity state at this gate:
+
+- No labelled CAPC-versus-baseline main-experiment result has been inspected or used for tuning.
+- CAPC parameters remain frozen.
+- Replication count and seed list remain frozen.
+- Main-run metadata will record the actual executing Git commit, configuration hash, trace hash, environment, and effective configuration for each run.
+- Failed runs must be logged; seeds must not be silently replaced.
+
+Interpretation: **the implementation and experimental design are ready for the frozen 5,400-run comparative matrix. CAPC effectiveness remains unestablished until the complete frozen matrix and predeclared Chapter 6 analyses are completed.**
+
+---
+
+## Current experiment status
 
 Completed:
 
 - Chapter 5 implementation and V1-V12 verification.
-- Runtime optimization and equivalence validation.
+- Runtime optimization and semantic-equivalence validation.
 - 90-run neutral Static Atomic FIFO regime-coverage pilot.
 - Scheduler-neutral normalization calibration.
 - Final primary CAPC parameter freeze.
+- Static Atomic FIFO replication-precision exercise through N=60.
+- Final replication count `N = 60` and consecutive seeds `1-60` frozen.
+- Residual precision limitation documented for 2/18 conditions.
+- Final pre-main test and deterministic verification gate passed.
 
 Pending:
 
-- Baseline precision pilot and final replication count `N` selection from `{30, 40, 50, 60}`.
-- Frozen consecutive seed list `1..N`.
-- Main `90N` research matrix.
+- Frozen 5,400-run main comparative matrix.
+- Completed-matrix integrity and provenance audit.
 - Deterministic post-processing and preservation checks.
 - Paired uncertainty/statistical analysis.
-- RQ1-RQ4 Chapter 6 results.
+- RQ1-RQ4 Chapter 6 results and interpretation.
 - Evidence-dependent Chapter 7 conclusions, limitations, and future work.
 
 ---
 
 ## Chapter mapping
 
-### Chapter 5 — Implementation and verification
+### Chapter 5 — Implementation, verification, and experimental readiness
 
-Use E1-E3 and the implementation/provenance parts of E6. These support architecture validation, reproducibility, software verification, and computational-readiness discussion. Do not present E3 as scheduler-performance evidence.
+Use E1-E3 and the implementation/provenance portions of E6-E8. These support architecture validation, reproducibility, software verification, calibration provenance, replication selection, and final experiment-readiness discussion. Do not present E3, E4, E5, E7, or E8 as CAPC comparative-performance evidence.
 
 ### Chapter 6 — Experimental results and analysis
 
-Use E4-E6 only as setup/calibration evidence. The primary Chapter 6 performance claims must come from the frozen main `90N` comparative dataset and its predeclared statistical analysis, which are still pending.
+Use E4-E8 only as setup, calibration, replication, and readiness evidence. Primary Chapter 6 performance claims must come from the complete frozen 5,400-run comparative dataset and the predeclared statistical analyses. The residual baseline-precision limitation from E7 must be reported transparently where relevant.
 
 ### Chapter 7 — Discussion and conclusion
 
-Use the final RQ-specific evidence from Chapter 6. Do not infer CAPC effectiveness from neutral-pilot, verification, or runtime-readiness evidence. Conclusions must be limited to actual frozen comparative findings and declared sensitivity/validity evidence.
+Use only the final RQ-specific evidence produced by Chapter 6 for claims about CAPC effectiveness. Do not infer effectiveness from verification, neutral-pilot, calibration, baseline-precision, or readiness evidence. Conclusions must be constrained to observed comparative findings and declared sensitivity/validity evidence.
 
 ---
 
 ## Next evidence entry
 
-The next entry must record the Static Atomic FIFO baseline precision exercise, the half-width calculations for `N = 30, 40, 50, 60`, the selected `N`, the frozen seed list, the executing Git commit, and the exact experiment/configuration hashes before any labelled CAPC comparative result is inspected.
+The next entry must record completion of the frozen 5,400-run main comparative matrix before substantive CAPC-effect interpretation. It must include at minimum:
+
+- actual executing Git revision(s);
+- frozen primary-configuration SHA-256 and observed effective-configuration hashes;
+- planned versus completed run count;
+- failure count and any documented rerun rationale;
+- seed, condition, and scheduler coverage;
+- paired-trace integrity result;
+- raw-output preservation location;
+- matrix manifest and provenance audit outcome.
+
+Only after that integrity gate should the evidence log record deterministic post-processing, paired uncertainty/statistical results, and RQ1-RQ4 findings for Chapter 6.

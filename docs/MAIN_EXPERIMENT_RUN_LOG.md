@@ -10,7 +10,7 @@ No CAPC-versus-baseline performance interpretation should be entered here before
 
 ## Frozen pre-launch state
 
-Status: **READY TO LAUNCH**
+Status: **LAUNCHED / RUNNING**
 
 Frozen experiment revision:
 
@@ -41,53 +41,71 @@ Storage readiness immediately before launch:
 
 - Filesystem size: `466 GiB`
 - Used: `186 GiB`
-- Available: `261 GiB`
+- Available immediately before launch: `262 GiB`
 - Capacity used: `42%`
 
 Existing research evidence is retained and must not be deleted to make room for the main matrix.
 
 ---
 
-## Launch protocol
+## Actual launch evidence
 
-Recommended output directory:
+Launch timestamp recorded locally:
 
-`results/main_5400_00d4e2e`
+`Tue Oct 13 19:54:10 +08 2026`
 
-Recommended launch command:
+Pre-launch provenance file:
+
+`results/main_5400_00d4e2e/PRELAUNCH_PROVENANCE.txt`
+
+Recorded environment:
+
+- Git commit: `00d4e2ebd7af24bd6abf35578a2d40296fb4ddc6`
+- Configuration SHA-256: `be25b6dc8c89c3a49b891ea4c69e1c1dfe38b6e117d577bd8026c2d0094ba875`
+- Python: `3.14.0`
+- Seeds: `1-60`
+- Expected runs: `5,400`
+- Free disk immediately before launch: `262 GiB`
+
+Actual background launch command:
 
 ```bash
 RUN_DIR="results/main_5400_00d4e2e"
 
-test ! -e "$RUN_DIR" || {
-  echo "ERROR: $RUN_DIR already exists"
-  exit 1
-}
-
-mkdir -p "$RUN_DIR"
-
-{
-  echo "CAPC MAIN COMPARATIVE EXPERIMENT"
-  echo "Launch date: $(date)"
-  echo "Git commit: $(git rev-parse HEAD)"
-  echo "Config SHA256: $(shasum -a 256 configs/primary.yaml | awk '{print $1}')"
-  echo "Python: $(python --version 2>&1)"
-  echo "Seeds: 1-60"
-  echo "Expected runs: 5400"
-  echo "Schedulers: frozen from configs/primary.yaml"
-} > "$RUN_DIR/PRELAUNCH_PROVENANCE.txt"
-
-set -o pipefail
-
-caffeinate -dimsu \
-capc-sim matrix \
+nohup caffeinate -ims \
+  capc-sim matrix \
   --config configs/primary.yaml \
   --seeds $(seq 1 60) \
   --output "$RUN_DIR" \
-  2>&1 | tee "$RUN_DIR/console.log"
+  > "$RUN_DIR/console.log" 2>&1 &
+
+echo $! | tee "$RUN_DIR/main.pid"
 ```
 
-The final matrix should use the CLI default **fail-fast** behaviour. Do not add `--continue-on-error` for the thesis main run.
+Launch process identifier:
+
+`48172`
+
+Initial operational check approximately 28 seconds after launch:
+
+- Process present: **YES**
+- Elapsed time: `00:28`
+- CPU usage: `100.0%`
+- Memory usage: `1.1%`
+- Output directory size: `76M`
+- `console.log`: empty at this early stage
+
+Interpretation: the main matrix process started successfully and was actively consuming CPU while generating output. This is operational evidence only; it does not establish successful matrix completion or any CAPC performance result.
+
+Operational documentation commits made after the frozen experiment revision do not alter the already-running local checkout or the recorded experiment/configuration hashes.
+
+---
+
+## Launch protocol rule
+
+The final matrix uses the CLI default **fail-fast** behaviour. `--continue-on-error` was not used.
+
+If a technical failure occurs, preserve the partial output exactly as produced and record the failure before any rerun decision. Do not replace or add seeds.
 
 ---
 
@@ -100,11 +118,10 @@ Permitted operational checks include:
 ```bash
 df -h .
 du -sh results/main_5400_00d4e2e
-ps aux | grep '[c]apc-sim'
-tail -f results/main_5400_00d4e2e/console.log
+PID=$(cat results/main_5400_00d4e2e/main.pid)
+ps -p "$PID" -o pid,etime,%cpu,%mem,command
+tail -30 results/main_5400_00d4e2e/console.log
 ```
-
-If the process fails, preserve the partial output exactly as produced and record the failure before any rerun decision. Do not replace or add seeds.
 
 ---
 
@@ -133,4 +150,4 @@ The matrix must pass this integrity audit before Chapter 6 performance interpret
 
 Status: **NOT YET ESTABLISHED**
 
-No CAPC comparative result is recorded in this file at pre-launch stage.
+No CAPC comparative result is recorded while the matrix is running.

@@ -101,6 +101,36 @@ Operational documentation commits made after the frozen experiment revision do n
 
 ---
 
+## Operational checkpoint 1
+
+Timestamp:
+
+`Tue Oct 13 21:19:53 +08 2026`
+
+Observed execution state:
+
+- Process identifier: `48172`
+- Process present: **YES**
+- Elapsed time: `01:24:31`
+- CPU usage: `100.0%`
+- Memory usage: `1.5%`
+- Completed run-output markers (`summary.json` count): `610`
+- Planned run count: `5,400`
+- Approximate completion fraction by marker count: `11.3%`
+- Output directory size: `11 GiB`
+- Filesystem used: `203 GiB`
+- Filesystem available: `244 GiB`
+- Filesystem capacity used: `46%`
+- `console.log` tail: empty; no traceback or error text observed
+
+Operational rate at this checkpoint is approximately `433 completed run outputs/hour` based on the elapsed time and marker count. A simple linear extrapolation would imply roughly `11.1 hours` remaining from this checkpoint and about `12.5 hours` total runtime, but this is only an operational estimate because later conditions/schedulers may have different execution costs.
+
+At the observed storage rate (`11 GiB` for `610` completed run-output markers), a simple linear projection is about `97 GiB` for 5,400 runs. This is also only a rough operational estimate; output volume may vary by condition and scheduler. With `244 GiB` still available at the checkpoint, storage headroom remained adequate.
+
+Interpretation: **HEALTHY / CONTINUE**. The process was alive, CPU-active, generating completed run artifacts, and had adequate remaining disk space. No comparative performance result was inspected or recorded.
+
+---
+
 ## Launch protocol rule
 
 The final matrix uses the CLI default **fail-fast** behaviour. `--continue-on-error` was not used.

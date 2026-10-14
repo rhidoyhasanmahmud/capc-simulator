@@ -10,7 +10,7 @@ No CAPC-versus-baseline performance interpretation should be entered here before
 
 ## Frozen pre-launch state
 
-Status: **LAUNCHED / RUNNING**
+Status: **LAUNCHED / RUNNING — OPERATIONAL SLOWDOWN UNDER DIAGNOSIS**
 
 Frozen experiment revision:
 
@@ -128,6 +128,38 @@ Operational rate at this checkpoint is approximately `433 completed run outputs/
 At the observed storage rate (`11 GiB` for `610` completed run-output markers), a simple linear projection is about `97 GiB` for 5,400 runs. This is also only a rough operational estimate; output volume may vary by condition and scheduler. With `244 GiB` still available at the checkpoint, storage headroom remained adequate.
 
 Interpretation: **HEALTHY / CONTINUE**. The process was alive, CPU-active, generating completed run artifacts, and had adequate remaining disk space. No comparative performance result was inspected or recorded.
+
+---
+
+## Operational checkpoint 2 — slowdown detected
+
+Timestamp:
+
+`Wed Oct 14 08:11:09 +08 2026`
+
+Observed execution state:
+
+- Process identifier: `48172`
+- Process present: **YES**
+- Elapsed time: `12:15:47`
+- CPU usage: `100.0%`
+- Memory usage: `1.4%`
+- Completed run-output markers (`summary.json` count): `681`
+- Planned run count: `5,400`
+- Approximate completion fraction by marker count: `12.6%`
+- Output directory size: `13 GiB`
+- Filesystem used: `208 GiB`
+- Filesystem available: `239 GiB`
+- Filesystem capacity used: `47%`
+- `console.log` tail: empty; no traceback or error text observed
+
+Between checkpoint 1 and checkpoint 2, only `71` additional run-output markers were completed over approximately `10.85` hours, an incremental rate of about `6.5 runs/hour`. This is a major execution-rate reduction relative to the first checkpoint and must not be treated as a normal linear continuation without diagnosis.
+
+The process remains CPU-active and storage remains adequate, so the evidence does not indicate a crash or disk-capacity failure. The slowdown is currently classified as an **operational anomaly / diagnostic requirement**, not as a CAPC performance finding.
+
+Given the matrix loop order in the frozen runner (shard count -> cross-shard ratio -> workers -> seed -> scheduler), 681 completed outputs imply that the first two 300-run condition blocks have completed and execution has entered the third condition block, corresponding to `4 shards`, `0.30` cross-shard ratio, and `2 workers`, assuming no hidden output-count discrepancy. Exact current run/scheduler should be established from file timestamps before any intervention.
+
+Action rule: do not terminate, rerun, edit code/configuration, or inspect comparative performance yet. First perform operational-only diagnosis of the most recently completed run paths and currently modified files.
 
 ---
 

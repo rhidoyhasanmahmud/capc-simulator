@@ -59,4 +59,11 @@ This procedure preserves the paired-design principle while avoiding unnecessary 
 
 Partial-output archival: **COMPLETE**.
 
-Next recovery batch: condition `sh4_x50_w2`, seeds `47-60`, all five frozen schedulers, using the unchanged frozen execution revision and configuration.
+Recovery batch launched for condition `sh4_x50_w2`, seeds `47-60`, all five frozen schedulers, using the unchanged frozen execution revision and configuration.
+
+- Recovery process PID: `1894`
+- Active count immediately before launch: `1,430`
+- Expected additional completed runs in this repair batch: `70`
+- Expected active count after successful batch completion: `1,500`
+
+The recovery batch writes to the existing active primary-results directory and uses a separate recovery console log/PID record. Performance interpretation remains prohibited until the full final matrix is complete and audited.

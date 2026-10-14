@@ -29,6 +29,19 @@ Recent completed outputs were in condition `sh4_x30_w2`. Seed 20 artifacts showe
 
 Multiple scheduler runs were therefore completing within seconds to tens of seconds while the host was active.
 
+## Continued-liveness confirmation
+
+A follow-up process check showed:
+
+- PID: `48172`
+- elapsed wall time: `12:23:24`
+- instantaneous CPU usage: `99.9%`
+- memory usage: `1.4%`
+- process state: `RN`
+- completed `summary.json` count: `709`
+
+The count increased from `699` to `709` over about 3 minutes of wall-clock time while the host was active, corresponding to roughly `200 completed run outputs/hour` over that short interval. This confirms active forward progress and argues against a simulator hang.
+
 ## Operational interpretation
 
 The key observation is the large mismatch between roughly 12 h 20 m of wall-clock elapsed time and only about 1 h 46 m of accumulated CPU time, despite near-100% CPU usage while the simulator is actively running. This makes a continuous simulator-computation slowdown unlikely.

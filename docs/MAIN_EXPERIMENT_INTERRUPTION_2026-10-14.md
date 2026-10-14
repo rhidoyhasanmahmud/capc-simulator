@@ -24,6 +24,21 @@ Post-reboot verification showed:
 - For seed `47` in condition `sh4_x50_w2`, only `diagnostic_fifo` and `static_atomic_fifo` had completed outputs.
 - No completed output directories existed for the remaining three schedulers of that paired seed at the post-reboot check.
 
+## Partial-output archival
+
+The two completed-but-unpaired seed-47 outputs were moved out of the active primary-results directory into:
+
+`results/main_5400_00d4e2e_interruption_archive_20261014`
+
+Archived directories:
+
+- `sh4_x50_w2_diagnostic_fifo_seed047`
+- `sh4_x50_w2_static_atomic_fifo_seed047`
+
+After archival, the active primary-results directory contained exactly `1,430` completed `summary.json` outputs. This corresponds to complete paired units only: the first 1,200 runs from the preceding four complete condition blocks plus 230 runs for seeds 1-46 in `sh4_x50_w2`.
+
+The original process PID file, pre-launch provenance file, and console log up to shutdown were also copied to the interruption archive when available.
+
 ## Research-integrity recovery rule
 
 The interruption is treated as a technical execution failure, not as an outcome-based exclusion.
@@ -39,3 +54,9 @@ The recovery protocol is:
 7. Perform a final full-coverage integrity audit across exactly 5,400 active primary run directories before statistical interpretation.
 
 This procedure preserves the paired-design principle while avoiding unnecessary re-execution of already complete paired units.
+
+## Recovery status
+
+Partial-output archival: **COMPLETE**.
+
+Next recovery batch: condition `sh4_x50_w2`, seeds `47-60`, all five frozen schedulers, using the unchanged frozen execution revision and configuration.

@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-31%20passed-brightgreen)
 ![Verification](https://img.shields.io/badge/Chapter%205%20verification-V1--V12%20PASS-brightgreen)
-![Status](https://img.shields.io/badge/status-replication%20frozen-blue)
+![Status](https://img.shields.io/badge/status-primary%20experiment%20complete-brightgreen)
 ![Purpose](https://img.shields.io/badge/purpose-MSc%20research-6f42c1)
 
 **Executable research artefact for an MSc thesis on blockchain scalability for time-sensitive IoT applications.**
@@ -36,7 +36,7 @@ The simulator provides:
 - run-level provenance for reproducible thesis experiments.
 
 > [!IMPORTANT]
-> This repository currently represents an **implementation, verification, calibration, and experiment-readiness artefact**. The primary CAPC parameter set and final replication count have been frozen before labelled CAPC comparative inference. The final replication count is **N = 60** with consecutive seeds **1-60**. Verification, neutral-pilot, runtime-readiness, calibration, and baseline-precision outputs are **not CAPC comparative performance findings**. The main 5,400-run comparative matrix has not yet been executed.
+> The frozen **5,400-run primary comparative experiment is complete and audited**. The final replication count was **N = 60** with consecutive seeds **1-60**. All 5,400 final runs record the frozen execution revision, all 1,080 condition-seed groups passed exact trace-pair integrity, and the canonical full matrix passed the final integrity audit. The frozen CAPC formulation did **not** meet the predeclared global p99 practical-improvement criterion: primary p99 practical success was **0/18 conditions**, with significant harm in **14/18** conditions and in **12/12 medium/high-contention** conditions. No post-result parameter retuning was performed. See [`docs/PRIMARY_RESULTS_2026-10-16.md`](docs/PRIMARY_RESULTS_2026-10-16.md).
 
 ---
 
@@ -143,13 +143,17 @@ capc-simulator/
 │   ├── DEVELOPMENT_VERIFICATION.md
 │   ├── END_TO_END_WORKFLOW.md
 │   ├── EXPERIMENT_EVIDENCE_LOG.md
+│   ├── EXPERIMENT_EVIDENCE_LOG_POST_MAIN_2026-10-16.md
 │   ├── EXPERIMENT_PROTOCOL.md
-│   ├── GITHUB_SETUP.md
+│   ├── MAIN_EXPERIMENT_COMPLETION_2026-10-16.md
+│   ├── MAIN_EXPERIMENT_RUN_LOG.md
 │   ├── OUTPUT_SCHEMA.md
 │   ├── PARAMETER_FREEZE.md
+│   ├── PRIMARY_RESULTS_2026-10-16.md
 │   ├── REPLICATION_FREEZE.md
 │   ├── REPLICATION_PRECISION_LOG.md
 │   ├── RESEARCH_INTEGRITY.md
+│   ├── THESIS_EVIDENCE_INDEX_2026-10-16.md
 │   ├── THESIS_TRACEABILITY.md
 │   └── VERIFICATION.md
 ├── examples/sample_output/
@@ -394,7 +398,7 @@ This deterministic table does **not** declare overall CAPC success; the final de
 
 ---
 
-## Primary thesis experiment design
+## Primary thesis experiment design and completion
 
 | Factor | Levels |
 |---|---|
@@ -404,13 +408,57 @@ This deterministic table does **not** declare overall CAPC success; the final de
 | Scheduler treatments | `5` |
 | Seeds | frozen `1..60` |
 
-The frozen main matrix is therefore:
+The frozen main matrix is:
 
 ```text
 3 × 3 × 2 × 5 × 60 = 5,400 runs
 ```
 
-The final replication count was selected from the predeclared candidate set `{30, 40, 50, 60}` using Static Atomic FIFO baseline log-p99 precision and frozen before labelled comparative inference. The main 5,400-run comparative matrix has not yet been executed.
+Final audited completion state:
+
+```text
+Completed runs                 5,400 / 5,400
+Conditions                     18 / 18
+Paired condition-seed units    1,080 / 1,080
+Missing expected runs          0
+Unexpected runs                0
+Metadata commit mismatches     0
+Unequal paired trace hashes    0
+Canonical failures             0
+Integrity audit                PASS
+```
+
+Frozen execution revision:
+
+`00d4e2ebd7af24bd6abf35578a2d40296fb4ddc6`
+
+See [`docs/MAIN_EXPERIMENT_COMPLETION_2026-10-16.md`](docs/MAIN_EXPERIMENT_COMPLETION_2026-10-16.md) for the interruption/recovery and final audit record.
+
+---
+
+## Primary experiment result snapshot
+
+The frozen CAPC formulation did not achieve the predeclared global p99 improvement target.
+
+RQ4 confirmatory summary:
+
+```text
+Significant p99 harm                 14 / 18 conditions
+Significant p99 benefit               2 / 18 conditions
+Not significant                       1 / 18 conditions
+Significant with zero median          1 / 18 conditions
+Primary p99 practical success         0 / 18 conditions
+Medium/high significant harm         12 / 12 conditions
+Throughput preservation             100.0% of paired seed units
+Jain preservation                   100.0% of paired seed units
+All preservation constraints pass    56.2% of paired seed units
+```
+
+RQ1 showed positive BURST p99 amplification in all 18 conditions with 95% bootstrap intervals above zero. RQ2 used 13,856,346 Static Atomic FIFO cross-shard observations with no sampling and found positive associations between subsequent waiting time and each of the four predeclared queue-entry indicators: arrival rate, queue length, dependency degree, and active lock conflicts.
+
+These results are retained as evidence-constrained negative/conditional findings. No CAPC parameter was retuned after labelled primary results were inspected.
+
+See [`docs/PRIMARY_RESULTS_2026-10-16.md`](docs/PRIMARY_RESULTS_2026-10-16.md) and [`docs/THESIS_EVIDENCE_INDEX_2026-10-16.md`](docs/THESIS_EVIDENCE_INDEX_2026-10-16.md).
 
 ---
 
@@ -449,7 +497,9 @@ The analysis layer includes helpers for:
 - the primary log-p99 mixed-effects model;
 - the RQ2 waiting-time mixed-effects model using Static Atomic FIFO transactions from the arrival-based measurement window.
 
-Final statistical conclusions are intentionally reserved for the frozen primary dataset.
+For the completed primary dataset, the planned log-p99 mixed model was attempted but was not inferentially usable because the random-effects covariance structure was singular. The predeclared paired Wilcoxon fallback with Holm adjustment was therefore used for the confirmatory RQ4 condition tests. The failed mixed-model coefficients are not used as confirmatory evidence.
+
+The RQ2 transaction model was fit on all 13,856,346 complete observations using an exact memory-safe random-intercept likelihood based on per-run sufficient statistics; no observations were sampled.
 
 ---
 
@@ -469,6 +519,8 @@ The repository enforces or records:
 - failed-run logging without silent replacement seeds;
 - fixed CAPC parameters during final comparative runs;
 - frozen consecutive main-experiment seeds `1-60`.
+
+Final audit confirmed the frozen execution revision in all 5,400 per-run metadata files and exact trace equality within all 1,080 paired condition-seed groups.
 
 ---
 
@@ -490,7 +542,12 @@ These are research-boundary exclusions rather than missing software features.
 | [`DEVELOPMENT_VERIFICATION.md`](docs/DEVELOPMENT_VERIFICATION.md) | Development verification evidence |
 | [`END_TO_END_WORKFLOW.md`](docs/END_TO_END_WORKFLOW.md) | Verification → pilot → matrix → analysis workflow |
 | [`EXPERIMENT_PROTOCOL.md`](docs/EXPERIMENT_PROTOCOL.md) | Experimental protocol summary |
-| [`EXPERIMENT_EVIDENCE_LOG.md`](docs/EXPERIMENT_EVIDENCE_LOG.md) | Durable thesis evidence ledger |
+| [`EXPERIMENT_EVIDENCE_LOG.md`](docs/EXPERIMENT_EVIDENCE_LOG.md) | Historical pre-main thesis evidence ledger |
+| [`EXPERIMENT_EVIDENCE_LOG_POST_MAIN_2026-10-16.md`](docs/EXPERIMENT_EVIDENCE_LOG_POST_MAIN_2026-10-16.md) | Post-main evidence continuation (E9-E15) |
+| [`MAIN_EXPERIMENT_RUN_LOG.md`](docs/MAIN_EXPERIMENT_RUN_LOG.md) | Operational execution, recovery, and final audit log |
+| [`MAIN_EXPERIMENT_COMPLETION_2026-10-16.md`](docs/MAIN_EXPERIMENT_COMPLETION_2026-10-16.md) | Final completion, provenance, pairing, and canonicalization record |
+| [`PRIMARY_RESULTS_2026-10-16.md`](docs/PRIMARY_RESULTS_2026-10-16.md) | Frozen RQ1/RQ2/RQ4 primary results and diagnostics |
+| [`THESIS_EVIDENCE_INDEX_2026-10-16.md`](docs/THESIS_EVIDENCE_INDEX_2026-10-16.md) | Compact reference map from thesis claims to evidence |
 | [`OUTPUT_SCHEMA.md`](docs/OUTPUT_SCHEMA.md) | Raw outputs and provenance schema |
 | [`RESEARCH_INTEGRITY.md`](docs/RESEARCH_INTEGRITY.md) | Guardrails against post-hoc tuning and unsupported claims |
 | [`PARAMETER_FREEZE.md`](docs/PARAMETER_FREEZE.md) | Neutral calibration evidence and frozen primary CAPC configuration |
@@ -519,10 +576,15 @@ These are research-boundary exclusions rather than missing software features.
 | Baseline precision exercise | ✅ 1,080 Static Atomic FIFO runs; provenance PASS |
 | Final replication count `N` | ✅ Frozen at `60`; seeds `1-60` |
 | Residual precision limitation | ⚠️ 2/18 conditions at half-width `0.051552` |
-| Main comparative research matrix | ⏳ 5,400 runs not executed |
-| CAPC performance conclusions | ⏳ Not established |
+| Main comparative research matrix | ✅ 5,400/5,400 complete; integrity audit PASS |
+| Canonical paired matrix | ✅ 1,080/1,080 paired units; trace integrity PASS |
+| RQ1 evidence | ✅ Frozen |
+| RQ2 evidence | ✅ Frozen |
+| RQ4 evidence | ✅ Frozen |
+| Primary p99 practical success | ❌ 0/18 conditions |
+| Post-result CAPC retuning | ✅ None performed |
 
-**Implementation and experiment-readiness evidence precede performance evidence.**
+**Implementation/readiness evidence and primary performance evidence are kept explicitly separate.**
 
 ---
 
@@ -544,6 +606,6 @@ Research area: blockchain scalability, sharded blockchain coordination, and time
 
 <div align="center">
 
-**CAPC is a scheduling-layer research mechanism: the code implements the mechanism; the frozen experiments determine whether the hypothesis is supported.**
+**CAPC is a scheduling-layer research mechanism: the implementation was verified, the frozen primary experiment is complete, and the final thesis claims must follow the audited evidence rather than the intended hypothesis.**
 
 </div>

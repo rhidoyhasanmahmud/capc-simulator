@@ -1,0 +1,15 @@
+{
+  "estimation": "exact Gaussian ML random-intercept model using per-group sufficient statistics",
+  "fixed_effect_count": 11,
+  "groups": 1080,
+  "icc": 0.0033315269788498783,
+  "log_likelihood_ml": 20840580.651688766,
+  "model_rows": 13856346,
+  "optimization_message": "Solution found.",
+  "optimization_success": true,
+  "random_intercept_boundary_zero": false,
+  "rho_tau2_over_sigma2": 0.0033426631513197073,
+  "sampling": "none",
+  "sigma2_residual": 0.002890721528434845,
+  "tau2_random_intercept": 9.66270833382574e-06
+}

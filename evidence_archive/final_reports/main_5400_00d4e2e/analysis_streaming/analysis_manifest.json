@@ -1,0 +1,25 @@
+{
+  "analysis_type": "memory-safe streaming equivalent of frozen deterministic post-processing",
+  "baseline": "static_atomic_fifo",
+  "duration_s": 1800.0,
+  "enriched_summary_rows": 5400,
+  "frozen_execution_commit": "00d4e2ebd7af24bd6abf35578a2d40296fb4ddc6",
+  "implementation_note": "Transactions were processed one paired condition-seed group at a time because the frozen in-memory loader would require loading approximately 50.34 GB of transaction CSV input. The research definitions and frozen analysis functions were not changed.",
+  "important": "These deterministic preservation tables do not alone establish overall CAPC success. Final conclusions require the predeclared paired uncertainty and inferential analyses.",
+  "input_run_count": 5400,
+  "paired_condition_seed_count": 1080,
+  "preservation_rows": 1080,
+  "preservation_thresholds": {
+    "jain_min_change": -0.02,
+    "low_priority_p95_wait_max_increase_pct": 25.0,
+    "p99_reduction_pct": 10.0,
+    "queue_stability_required": true,
+    "starvation_max_increase_pp": 1.0,
+    "throughput_min_change_pct": -5.0
+  },
+  "primary_yaml_sha256": "be25b6dc8c89c3a49b891ea4c69e1c1dfe38b6e117d577bd8026c2d0094ba875",
+  "starvation_rows": 5400,
+  "starvation_rule": "max(0.50 s, 5 x paired-baseline median waiting time)",
+  "treatment": "capc",
+  "warmup_s": 180.0
+}

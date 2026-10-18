@@ -1,0 +1,6 @@
+seed,shard_count,cross_shard_ratio,workers,scheduler,starvation_threshold_s,starvation_denominator,starvation_evaluable,starvation_incidence,starvation_denominator_high,starvation_incidence_high,starvation_denominator_medium,starvation_incidence_medium,starvation_denominator_low,starvation_incidence_low
+5,4,0.3,2,diagnostic_fifo,0.5,12310,12310,0.0,2334,0.0,6341,0.0,3635,0.0
+5,4,0.3,2,static_atomic_fifo,0.5,12310,12310,0.0,2334,0.0,6341,0.0,3635,0.0
+5,4,0.3,2,capc,0.5,12310,12310,0.008448415922014622,2334,0.000856898029134533,6341,0.00804289544235925,3635,0.014030261348005502
+5,4,0.3,2,capc_no_contention,0.5,12310,12310,0.006498781478472786,2334,0.0,6341,0.004258003469484309,3635,0.014580467675378267
+5,4,0.3,2,capc_no_priority,0.5,12310,12310,0.011129163281884647,2334,0.010711225364181662,6341,0.012458602744046681,3635,0.009078404401650619

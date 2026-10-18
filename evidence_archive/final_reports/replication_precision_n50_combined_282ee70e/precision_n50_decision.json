@@ -1,0 +1,20 @@
+{
+  "candidate_history": {
+    "N30": "16/18 PASS",
+    "N40": "16/18 PASS"
+  },
+  "candidate_N": 50,
+  "target_half_width_log_p99": 0.05,
+  "conditions_checked": 18,
+  "conditions_passed": 16,
+  "conditions_failed": 2,
+  "all_conditions_pass": false,
+  "worst_condition": {
+    "shard_count": 4,
+    "cross_shard_ratio": 0.5,
+    "workers": 2,
+    "half_width_log_p99": 0.05666007335602427
+  },
+  "decision": "EXTEND_TO_N_60",
+  "note": "Static Atomic FIFO only. No labelled CAPC comparative performance was inspected during replication selection."
+}

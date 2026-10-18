@@ -1,0 +1,19 @@
+Primary log-p99 mixed-effects model fallback record
+
+The predeclared mixed-effects model was attempted first.
+
+The fitted model was not considered inferentially usable because:
+- random-effects covariance was singular;
+- estimated group variance was zero;
+- log-likelihood was infinite;
+- AIC/BIC were negative infinite;
+- Hessian was not positive definite;
+- random effects could not be predicted from the singular covariance structure.
+
+Accordingly, the predeclared paired Wilcoxon fallback was applied
+within each of the 18 fixed experimental conditions using the 60
+matched seeds. The resulting 18 p-values were adjusted using the
+Holm procedure.
+
+The failed mixed-model coefficients are not used as confirmatory
+evidence.

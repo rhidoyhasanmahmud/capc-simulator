@@ -1,0 +1,37 @@
+{
+  "completed_run_count": 50,
+  "config_hash": "b268b4280bdadb91c03e0c8299a0db3b5fc9c8ccad21128bed63077ba9b5f042",
+  "cross_shard_ratios": [
+    0.5
+  ],
+  "failure_count": 0,
+  "paired_trace_integrity": true,
+  "planned_run_count": 50,
+  "research_label": "thesis-primary",
+  "research_mode": "primary",
+  "schedulers": [
+    "diagnostic_fifo",
+    "static_atomic_fifo",
+    "capc",
+    "capc_no_contention",
+    "capc_no_priority"
+  ],
+  "seeds": [
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60
+  ],
+  "shard_counts": [
+    16
+  ],
+  "workers": [
+    4
+  ]
+}

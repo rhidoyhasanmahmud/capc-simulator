@@ -1,0 +1,11 @@
+Intercept
+arrival_rate_at_entry
+queue_length_at_entry
+dependency_degree
+active_lock_conflicts_at_entry
+workload_state_NORMAL
+shard_count_8
+shard_count_16
+cross_shard_ratio_0.3
+cross_shard_ratio_0.5
+workers_4

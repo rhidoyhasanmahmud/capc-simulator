@@ -1,0 +1,9 @@
+CAPC MAIN COMPARATIVE EXPERIMENT
+Launch date: Tue Oct 13 19:54:10 +08 2026
+Git commit: 00d4e2ebd7af24bd6abf35578a2d40296fb4ddc6
+Config SHA256: be25b6dc8c89c3a49b891ea4c69e1c1dfe38b6e117d577bd8026c2d0094ba875
+Python: Python 3.14.0
+Seeds: 1-60
+Expected runs: 5400
+Free disk before launch:
+/dev/disk1s5   466Gi   186Gi   262Gi    42%    1.5M  2.7G    0%   /System/Volumes/Data

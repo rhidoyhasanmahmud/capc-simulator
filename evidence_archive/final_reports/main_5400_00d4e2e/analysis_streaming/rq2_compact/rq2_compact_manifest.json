@@ -1,0 +1,31 @@
+{
+  "categorical_references": {
+    "cross_shard_ratio": 0.1,
+    "shard_count": 4,
+    "workers": 2,
+    "workload_state": "BURST"
+  },
+  "fixed_effect_columns": [
+    "Intercept",
+    "arrival_rate_at_entry",
+    "queue_length_at_entry",
+    "dependency_degree",
+    "active_lock_conflicts_at_entry",
+    "workload_state_NORMAL",
+    "shard_count_8",
+    "shard_count_16",
+    "cross_shard_ratio_0.3",
+    "cross_shard_ratio_0.5",
+    "workers_4"
+  ],
+  "group_count": 1080,
+  "input_run_count": 1080,
+  "measured_rows_before_complete_case": 13856346,
+  "measurement_window": "180 <= arrival_time < 1800",
+  "model": "log1p(wait) mixed model with random intercept by run_id",
+  "model_rows": 13856346,
+  "note": "Compact numerical representation of the frozen RQ2 model. No observations were sampled or reweighted.",
+  "rows_dropped_missing_predictors": 0,
+  "sampling": "none",
+  "scheduler": "static_atomic_fifo"
+}

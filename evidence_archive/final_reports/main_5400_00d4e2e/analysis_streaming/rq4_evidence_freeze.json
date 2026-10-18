@@ -1,0 +1,24 @@
+{
+  "baseline": "static_atomic_fifo",
+  "conditions": 18,
+  "confirmatory_counts": {
+    "not_significant": 1,
+    "significant_benefit": 2,
+    "significant_harm": 14,
+    "significant_zero_median": 1
+  },
+  "jain_preservation_rate_across_1080_seed_pairs_pct": 100.0,
+  "medium_high_conditions": 12,
+  "medium_high_significant_harm_count": 12,
+  "mixed_model_status": "attempted but unusable due singular random-effects covariance; predeclared Wilcoxon fallback used",
+  "note": "No new overall-success criterion was introduced. The frozen preservation implementation evaluates deterministic per-condition/seed constraints and explicitly does not itself declare overall research success.",
+  "overall_preservation_pass_rate_across_1080_seed_pairs_pct": 56.2037037037037,
+  "paired_seeds_per_condition": 60,
+  "primary_inferential_method": "paired Wilcoxon within condition + Holm adjustment",
+  "primary_metric": "per-run p99 cross-shard end-to-end latency",
+  "primary_p99_effect_success_count": 0,
+  "rq": "RQ4",
+  "status": "RQ4 EVIDENCE FROZEN",
+  "throughput_preservation_rate_across_1080_seed_pairs_pct": 100.0,
+  "treatment": "capc"
+}

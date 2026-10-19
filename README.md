@@ -40,6 +40,14 @@ The simulator provides:
 
 ---
 
+## Thesis table evidence and reproducibility
+
+**[Browse the table-by-table evidence map](docs/THESIS_TABLE_EVIDENCE_MAP.md)** for all **28 numbered thesis tables**, with links to frozen experiment/protocol records, documented output filenames, and explicit per-table verification status. A [CSV index](docs/table_evidence_index.csv) is also available.
+
+> **Availability / verification boundary:** This repository publishes the **evidence map**, not the original experiment dataset. Existing research records describe approximately 126 GB of local primary outputs (including 50.34 GB transaction CSVs), but **raw CSV/JSON files were not uploaded or independently verified for this mapping**. Documentation and reported hashes do not substitute for checksums computed from the original files.
+
+---
+
 ## Research boundary
 
 CAPC changes **service order only**. It does not redesign consensus, shard formation, validator assignment, networking, or atomic commit semantics.
